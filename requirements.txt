@@ -1,0 +1,14 @@
+Django 
+psycopg2-binary
+celery
+redis
+flower
+asyncio
+telethon
+django-import-export
+django-filter
+import-export
+Pillow 
+asgiref
+djangorestframework
+django-cors-headers

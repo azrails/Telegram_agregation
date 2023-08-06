@@ -1,0 +1,88 @@
+services:
+  frontend:
+    container_name: interface
+    build:  ./agregatorInterface
+    command: sh -c "cd /usr/src/interface && npm i && npm run dev --force"
+    volumes:
+      - ./agregatorInterface:/usr/src/interface
+    ports:
+      - "5173:5173"
+
+  web-app:
+    build: 
+      context: .
+    ports:
+      - "8000:8000"
+
+    volumes:
+      - ./service:/service
+
+    command: >
+      sh -c 'python manage.py makemigrations && python manage.py migrate && python manage.py runserver 0.0.0.0:8000'
+    environment:
+      - DB_HOST=database
+      - DB_NAME=dbname
+      - DB_USER=dbuser
+      - DB_PASS=pass
+
+    links:
+      - database:database
+    depends_on:
+      - database
+
+
+  database:
+    image: postgres:14.6-alpine
+    environment:
+      - POSTGRES_DB=dbname
+      - POSTGRES_USER=dbuser
+      - POSTGRES_PASSWORD=pass
+      # - POSTGRES_PORT=5432
+    volumes:
+      - bd_data:/var/lib/postgresql/data
+
+
+  redis:
+    image: redis:7.0.5-alpine
+    hostname: redis
+
+
+  worker:
+    build: 
+      context: .
+    hostname: worker
+    entrypoint: celery
+    command: -A service worker --loglevel=info -B
+    
+    volumes:
+      - ./service:/service
+    
+    links:
+      - redis
+      - database:database
+    depends_on:
+      - redis
+      - database
+    environment:
+      - DB_HOST=database
+      - DB_NAME=dbname
+      - DB_USER=dbuser
+      - DB_PASS=pass
+
+  flower:
+    build: 
+      context: .
+    hostname: flower
+    entrypoint: celery
+    command: -A service flower
+    volumes:
+        - ./service:/service
+    links:
+        - redis
+    depends_on:
+      - redis
+    ports:
+      - "5555:5555"
+
+volumes:
+  bd_data:
