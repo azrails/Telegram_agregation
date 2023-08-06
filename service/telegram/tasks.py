@@ -53,7 +53,7 @@ def parse_telegram_chanel(source_id, channel_url: str, offset_date: datetime):
             if post_id:
                 await create_post(source_id, post_id, date, post_text)
                 try:
-                    async for comment in client.iter_messages(channel_url, reply_to=post_id):
+                    async for comment in client.iter_messages(channel_url, reply_to=post_id,):
                         comment_id = comment.id
                         comment_text = str(comment.text)
                         if comment_id:
@@ -67,7 +67,6 @@ def parse_telegram_chanel(source_id, channel_url: str, offset_date: datetime):
 @app.task
 def parse_data():
     sources = Sources.objects.all()
-    subtasks = []
     current_date = datetime.datetime.now(datetime.timezone.utc)
     offset_date = current_date - datetime.timedelta(minutes=30)
     for source in sources:

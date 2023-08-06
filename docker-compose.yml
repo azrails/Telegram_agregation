@@ -1,5 +1,7 @@
 services:
   frontend:
+    environment:
+      - VITE_API_URL
     container_name: interface
     build:  ./agregatorInterface
     command: sh -c "cd /usr/src/interface && npm i && npm run dev --force"

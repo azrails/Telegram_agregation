@@ -7,26 +7,36 @@ import CardActions from "@mui/joy/CardActions"
 import StarOutlineIcon from '@mui/icons-material/StarOutline'
 import EditIcon from '@mui/icons-material/Edit'
 import CloseIcon from '@mui/icons-material/Close'
+import $api from "../../../lib/api"
 
-function ButtonGroup({ liked }) {
+function ButtonGroup({ liked, id, handleDelete }) {
     return <Stack spacing={1}
         direction={{ xs: 'column', md: 'row'}}
         flex={1}
         justifyContent="flex-end"
         alignItems="center">
-        <IconButton size="md">
+        {/* <IconButton size="md">
             <StarOutlineIcon />
-        </IconButton>
-        <IconButton size="md">
+        </IconButton> */}
+        <IconButton size="md" component={Link} to={`projects/edit/${id}`}>
             <EditIcon />
         </IconButton>
-        <IconButton size="md">
+        <IconButton size="md" onClick={() => handleDelete(id)}>
             <CloseIcon/>
         </IconButton>
     </Stack>
 }
 
-export default function ProjectCard({id, title, description, liked = false, category }) {
+export default function ProjectCard({id, title, description, liked = false, category, setReload }) {
+    const handleDelete = async (id) => {
+        try{
+            const response = await $api.delete(`projects/${id}`)
+            setReload(true);
+        }
+        catch{
+            console.log('error delete project')
+        }
+    }
     return <Card variant="outlined"
         orientation="horizontal"
         sx={{
@@ -55,7 +65,7 @@ export default function ProjectCard({id, title, description, liked = false, cate
             </Typography>
         </Stack>
         <CardActions sx={{mr: 2, my: 2}}>
-            <ButtonGroup liked={liked}/>
+            <ButtonGroup liked={liked} id={id} handleDelete={handleDelete}/>
         </CardActions>
     </Card>
 }

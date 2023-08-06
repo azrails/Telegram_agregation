@@ -9,7 +9,7 @@ class Groups(models.Model):
         ('undef', ''),
         ('buisness', 'Бизнес'),
         ('finance', 'Финансы'),
-        ('traveling', 'Путишествия')
+        ('traveling', 'Путешествия')
     ]
     id = models.AutoField(primary_key=True)
     title = models.CharField(choices=GROUPS_CHOISES, default='undef')
@@ -22,6 +22,7 @@ class Sources(models.Model):
         ('telegram', 'Telegram'),
     ]
     id = models.AutoField(primary_key=True)
+    title = models.CharField(max_length=100, blank=True)
     url = models.CharField(max_length=1000)
     type = models.CharField(choices=TYPE_CHOISES, default='telegram')
 

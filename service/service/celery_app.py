@@ -19,7 +19,7 @@ app.autodiscover_tasks()
 app.conf.beat_schedule = {
     'task1': { 
         'task': 'telegram.tasks.parse_data',
-        'schedule': crontab(minute='*/20'),
+        'schedule': crontab(minute='*/15'),
     },
 }
 
