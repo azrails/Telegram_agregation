@@ -56,6 +56,9 @@ class Promts(models.Model):
     promt_text = models.TextField()
     project_id = models.ForeignKey(Projects, related_name='promts', on_delete=models.CASCADE)
 
+    def __str__(self):
+        return self.description
+
 class GptPosts(models.Model):
     id = models.AutoField(primary_key=True)
     summary = models.TextField(blank=True)
@@ -63,11 +66,15 @@ class GptPosts(models.Model):
     promt_id = models.ForeignKey(Promts, related_name='gpt_posts', on_delete=models.CASCADE)
     date = models.DateTimeField(default=timezone.now)
 
+    def __str__(self):
+        return self.date
+
 class Posts(models.Model):
     id = models.CharField(primary_key=True)
     post_text = models.TextField(blank=True)
     date = models.DateTimeField()
     source_id = models.ForeignKey(Sources, related_name='posts', on_delete=models.CASCADE)
+
 
 class Comments(models.Model):
     id = models.CharField(primary_key=True)

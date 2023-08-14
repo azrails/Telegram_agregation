@@ -11,11 +11,6 @@ app.conf.broker_url = settings.CELERY_BROKER_URL
 
 app.autodiscover_tasks()
 
-
-# @app.task
-# def debug_task():
-#     time.sleep(20)
-#     print("Работает")
 app.conf.beat_schedule = {
     'task1': { 
         'task': 'telegram.tasks.parse_data',
@@ -23,7 +18,6 @@ app.conf.beat_schedule = {
     },
     'task2': { 
         'task': 'telegram.tasks.get_gpt_posts_hour',
-        'schedule': crontab(minute='*/1'),
+        'schedule': crontab(minute='*/60'),
     },
 }
-

@@ -20,7 +20,7 @@ import openai
 api_id = '28410116'
 api_hash = '2fc4498ba27db1a3b03576ad81d5440d'
 session='anon'
-gpt_key = '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'
+openai.api_key = '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'
 
 
 
@@ -94,15 +94,16 @@ def get_gpt_posts_hour():
                 posts_l = source.posts.filter(date__range=[prev_hour_date, current_time])
                 for post in posts_l:
                     posts.append(post.post_text)
-            response = openai.ChatCompletion.create(
-                model='gpt-4',
-                messages = [
-                    {"role": "system", "content": f'{current_promt.promt_text}'},
-                    {"role": "user", "content": f'{" ".join(posts)}'},
-                ]
-            )
-            GptPosts.objects.create(summary=response['choices'][0]['message']['content'], project_id=project.id,
-                                    promt_id=current_promt.id)
+            if len(posts) != 0:
+                response = openai.ChatCompletion.create(
+                    model='gpt-3.5-turbo',
+                    messages = [
+                        {"role": "system", "content": f'{current_promt.promt_text}'},
+                        {"role": "user", "content": f'{" ".join(posts)}'},
+                    ]
+                )
+                GptPosts.objects.create(summary=response['choices'][0]['message']['content'], project_id=project,
+                                        promt_id=current_promt)
 
             
 
