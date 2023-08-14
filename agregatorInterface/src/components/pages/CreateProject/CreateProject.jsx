@@ -26,6 +26,8 @@ import Button from "@mui/joy/Button"
 import Autocomplete from "@mui/joy/Autocomplete"
 import $api from '../../../lib/api'
 import ButtonGroup from '@mui/joy/ButtonGroup'
+import Projects from "../../../store/Projects"
+import Sources from '../../../store/Sources'
 
 function HeaderSection() {
     const navigate = useNavigate();
@@ -38,7 +40,11 @@ function HeaderSection() {
         gap={1}
         spacing={2}
     >
-        <IconButton size="lg" onClick={() => navigate(-1)}>
+        <IconButton size="lg" onClick={() => navigate(-1)} sx={{
+            '&:focus': {
+                outline: 'none'
+            },
+        }}>
             <ArrowBackIcon />
         </IconButton>
     </Stack>
@@ -60,6 +66,8 @@ export default function CreateProject() {
     const [resourceUrl, setResourceUrl] = useState('');
     const [projectTitle, setProjectTitle] = useState('');
     const [projectDescription, setProjectDescription] = useState('');
+    const [projectPromt, setProjectPromt] = useState('');
+    const [promtTitle, setPromtTitle] = useState("");
 
     const navigate = useNavigate();
 
@@ -78,19 +86,15 @@ export default function CreateProject() {
     }
 
     const createNewProject = async () => {
-        try {
-            const response = await $api.post('projects/', {
-                title: projectTitle,
-                description: projectDescription,
-                update_time: time,
-                sourses: usingSources
-            })
-            console.log(response)
-            navigate(-1);
-        }
-        catch {
-            console.log('create project error')
-        }
+        Projects.createProject({
+            title: projectTitle,
+            description: projectDescription,
+            update_time: time,
+            sourses: usingSources,
+            promtDescription: promtTitle,
+            promtText: projectPromt
+        })
+        navigate(-1);
     }
 
     const createNewSource = async () => {
@@ -100,6 +104,8 @@ export default function CreateProject() {
                 title: resourceTitle,
                 url: resourceUrl,
             })
+            Sources.sources.push(response.data);
+            Sources.count++;
             setReload(true);
         }
         catch {
@@ -110,7 +116,7 @@ export default function CreateProject() {
     useEffect(() => {
         (async () => {
             const results = (await $api.get('sources/')).data
-            setSources(results)
+            setSources(results.results)
             setReload(false);
         })()
     }, [reload])
@@ -160,7 +166,17 @@ export default function CreateProject() {
                     <FormControl>
                         <FormLabel>Тип источника</FormLabel>
                         <Select size="lg" defaultValue={sourceType} onChange={(_, newValue) => setSourceType(newValue)}
-                            sx={{ '--Select-focusedHighlight': 'none' }}>
+                            sx={{ '--Select-focusedHighlight': 'none' }}
+                            slotProps={{
+                                listbox: {
+                                    placement: 'bottom-start',
+                                    sx: { minWidth: 160 },
+                                },
+                                button: {
+                                    sx: { '&:focus': { outline: 'none' } }
+                                }
+                            }}
+                        >
                             {['telegram'].map((value) => <Option key={value} value={value}>{source_types[value]}</Option>)}
                         </Select>
                     </FormControl>
@@ -270,13 +286,13 @@ export default function CreateProject() {
                         <Typography level="h4" color="neutral">
                             Название:
                         </Typography>
-                        <Input placeholder="Новый промт..." size="lg" />
+                        <Input placeholder="Новый промт..." size="lg" value={promtTitle} onChange={e => setPromtTitle(e.target.value)}/>
                     </Box>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, justifyContent: 'space-between' }}>
                         <Typography level="h4" color="neutral">
                             Текст промта:
                         </Typography>
-                        <TextArea placeholder="..." size="lg" sx={{ minWidth: { md: 300 } }} />
+                        <TextArea placeholder="..." size="lg" sx={{ minWidth: { md: 300 } }} value={projectPromt} onChange={e => setProjectPromt(e.target.value)}/>
                     </Box>
                 </Stack></Grid>
             <Grid xs={12} md={6} sx={{

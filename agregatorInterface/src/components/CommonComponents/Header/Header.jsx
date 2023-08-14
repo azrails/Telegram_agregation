@@ -29,12 +29,17 @@ export default function Header() {
             })}
         />
         <IconButton
-        variant="outlined"
-        size="sm"
-        onClick={() => toggleSidebar()}
+            variant="outlined"
+            size="sm"
+            onClick={() => toggleSidebar()}
+            sx={{
+                '&:focus': {
+                    outline: 'none'
+                },
+            }}
         >
-            <i data-feather="menu"/>
+            <i data-feather="menu" />
         </IconButton>
         <ColoredSchemeToggle />
-        </Sheet>
+    </Sheet>
 }

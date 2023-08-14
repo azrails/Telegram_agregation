@@ -11,16 +11,18 @@ from PIL import Image
 from asgiref.sync import sync_to_async
 import os
 from django.core.files import File
-from .models import Sources, Posts, Comments
+from .models import Sources, Posts, Comments, Projects, Promts, GptPosts
 import datetime
 from celery import group
 from telethon.errors import SessionPasswordNeededError
-
-
+import openai
 
 api_id = '28410116'
 api_hash = '2fc4498ba27db1a3b03576ad81d5440d'
 session='anon'
+gpt_key = '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'
+
+
 
 @sync_to_async
 def create_post(source_id, post_id, date, post_text):
@@ -32,12 +34,13 @@ def create_post(source_id, post_id, date, post_text):
     except Exception as e:
         print(f'\n\n {e} \n\n')
 
+
 @sync_to_async
 def create_comment(source_id, post_id, comment_id, comment_text):
     try:
         comment = Comments.objects.filter(id = (str(source_id) + '@' + str(post_id) + '@' + str(comment_id))).exists()
         if not comment:
-                new_comment = Comments(id=(str(source_id) + '@' + str(post_id) + '@' + str(comment_id)), comment_text=comment_text)
+                new_comment = Comments(id=(str(source_id) + '@' + str(post_id) + '@' + str(comment_id)), comment_text=comment_text, source_id=Sources.objects.get(id=source_id))
                 new_comment.save()
     except Exception as e:
         print(f'\n\n {e} \n\n')
@@ -55,9 +58,13 @@ def parse_telegram_chanel(source_id, channel_url: str, offset_date: datetime):
                 try:
                     async for comment in client.iter_messages(channel_url, reply_to=post_id,):
                         comment_id = comment.id
-                        comment_text = str(comment.text)
-                        if comment_id:
-                            await create_comment(source_id, post_id, comment_id, comment_text)
+                        try:
+                            Posts.objects.get(id__icontains=f'@{comment_id}')
+                            comment_text = str(comment.text)
+                            if comment_id:
+                                await create_comment(source_id, post_id, comment_id, comment_text)
+                        except:
+                            pass
                 except Exception as e:
                     pass
     with client:
@@ -73,6 +80,35 @@ def parse_data():
         if source.type == 'telegram':
             parse_telegram_chanel(source.id ,source.url, offset_date)
     return 'Updates complited'
+
+@app.task
+def get_gpt_posts_hour():
+    current_time = datetime.datetime.now(datetime.timezone.utc)
+    prev_hour_date = current_time - datetime.timedelta(hours=1)
+    projects = Projects.objects.all()
+    for project in projects:
+        if project.update_time == datetime.time(1, 0):
+            posts = []
+            current_promt = Promts.objects.get(id=project.current_promt)
+            for source in project.sourses.all():
+                posts_l = source.posts.filter(date__range=[prev_hour_date, current_time])
+                for post in posts_l:
+                    posts.append(post.post_text)
+            response = openai.ChatCompletion.create(
+                model='gpt-4',
+                messages = [
+                    {"role": "system", "content": f'{current_promt.promt_text}'},
+                    {"role": "user", "content": f'{" ".join(posts)}'},
+                ]
+            )
+            GptPosts.objects.create(summary=response['choices'][0]['message']['content'], project_id=project.id,
+                                    promt_id=current_promt.id)
+
+            
+
+            
+        
+
 
 
 # @sync_to_async

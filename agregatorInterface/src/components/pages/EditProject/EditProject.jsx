@@ -2,7 +2,7 @@ import Grid from "@mui/joy/Grid"
 import Stack from "@mui/joy/Stack"
 import IconButton from "@mui/joy/IconButton"
 import ArrowBackIcon from '@mui/icons-material/ArrowBack'
-import { useLoaderData, useNavigate } from "react-router-dom"
+import { useLoaderData, useNavigate, useParams } from "react-router-dom"
 import Divider from "@mui/joy/Divider"
 import Typography from "@mui/joy/Typography"
 import RadioGroup from '@mui/joy/RadioGroup'
@@ -26,11 +26,10 @@ import Button from "@mui/joy/Button"
 import Autocomplete from "@mui/joy/Autocomplete"
 import $api from '../../../lib/api'
 import ButtonGroup from '@mui/joy/ButtonGroup'
-
-export async function projectLoader({params}){
-    const res = await $api.get(`projects/${params.projectId}`)
-    return res.data
-}
+import Projects from "../../../store/Projects"
+import Sheet from '@mui/joy/Sheet';
+import { observer } from "mobx-react-lite"
+import Sources from "../../../store/Sources"
 
 function HeaderSection() {
     const navigate = useNavigate();
@@ -43,7 +42,11 @@ function HeaderSection() {
         gap={1}
         spacing={2}
     >
-        <IconButton size="lg" onClick={() => navigate(-1)}>
+        <IconButton size="lg" onClick={() => navigate(-1)} sx={{
+            '&:focus': {
+                outline: 'none'
+            },
+        }}>
             <ArrowBackIcon />
         </IconButton>
     </Stack>
@@ -52,8 +55,9 @@ function HeaderSection() {
 const times = { '01:00:00': 'Час', '00:00:00': 'День' }
 const source_types = { 'telegram': 'Telegram' }
 
-export default function EditProject() {
-    const project = useLoaderData();
+const EditProject = observer(() => {
+    const param = useParams();
+    const project = Projects.getProjectById(parseInt(param.projectId))
     const [time, setTime] = useState(project.update_time);
     const [open, setOpen] = useState(false);
     const [sourceType, setSourceType] = useState('telegram');
@@ -66,9 +70,18 @@ export default function EditProject() {
     const [resourceUrl, setResourceUrl] = useState('');
     const [projectTitle, setProjectTitle] = useState(project.title);
     const [projectDescription, setProjectDescription] = useState(project.description);
+    const [currentPromtDescription, setCurrentPromtDescription] = useState('');
+    const [currentPromtText, setCurrentPromtText] = useState('');
+    const [addPromtDialog, setAddPromtDialog] = useState(false);
+    const [addPromtDescription, setAddPromtDescription] = useState('')
+    const [addPromtText, setAddPromtText] = useState('')
+
+    useEffect(() => {
+        setCurrentPromtDescription(project.promts.find(e => e.id === project.current_promt)?.description);
+        setCurrentPromtText(project.promts.find(e => e.id === project.current_promt)?.promt_text);
+    }, [project.current_promt])
 
     const navigate = useNavigate();
-
     const deleteSourceElement = index => {
         let new_list = [];
         if (index === 0) {
@@ -83,20 +96,17 @@ export default function EditProject() {
         setUsingSources(new_list);
     }
 
-    const createNewProject = async () => {
-        try {
-            const response = await $api.put(`projects/${project.id}/`, {
-                title: projectTitle,
-                description: projectDescription,
-                update_time: time,
-                sourses: usingSources
-            })
-            console.log(response)
-            navigate(-1);
-        }
-        catch {
-            console.log('create project error')
-        }
+    const createNewProject = () => {
+        Projects.modifyProjectById(project.id, {
+            ...project,
+            title: projectTitle,
+            description: projectDescription,
+            update_time: time,
+            sourses: usingSources,
+            promtDescription: currentPromtDescription,
+            promtText: currentPromtText
+        })
+        navigate(-1);
     }
 
     const createNewSource = async () => {
@@ -106,6 +116,8 @@ export default function EditProject() {
                 title: resourceTitle,
                 url: resourceUrl,
             })
+            Sources.sources.push(response.data);
+            Sources.count++;
             setReload(true);
         }
         catch {
@@ -113,16 +125,45 @@ export default function EditProject() {
         }
     }
 
+    const createNewPromt = () => {
+        Projects.createPromt(project.id, {description: addPromtDescription, promt_text: addPromtText, project_id: project.id})
+    }
+
     useEffect(() => {
         (async () => {
             const results = (await $api.get('sources/')).data
-            setSources(results)
+            setSources(results.results)
             setReload(false);
         })()
     }, [reload])
 
-    console.log(sources, usingSources)
     return <>
+        <Modal open={addPromtDialog} onClose={() => setAddPromtDialog(false)}>
+            <ModalDialog aria-labelledby="basic-modal-dialog-title"
+                aria-describedby="basic-modal-dialog-description"
+                sx={{ maxWidth: 500 }}>
+                <Typography id="basic-modal-dialog-title" level="h2" textAlign='center'>
+                    Промт
+                </Typography>
+                <Stack spacing={2}>
+                    <Divider>Новый промт</Divider>
+                    <FormControl>
+                        <FormLabel>Название промта</FormLabel>
+                        <Input placeholder="Название..." size="lg" value={addPromtDescription} onChange={e => setAddPromtDescription(e.target.value)} />
+                    </FormControl>
+                    <FormControl>
+                        <FormLabel>Текст промта</FormLabel>
+                        <TextArea placeholder="..." size="lg" value={addPromtText} onChange={e => setAddPromtText(e.target.value)} />
+                    </FormControl>
+                    <Button onClick={() => {
+                        createNewPromt();
+                        setAddPromtDialog(false);
+                        setAddPromtText('');
+                        setAddPromtDescription('');
+                    }}>Сохранить</Button>
+                </Stack>
+            </ModalDialog>
+        </Modal>
         <Modal open={openAddDialog} onClose={() => setOpenAddDialog(false)}>
             <ModalDialog
                 aria-labelledby="basic-modal-dialog-title"
@@ -168,7 +209,17 @@ export default function EditProject() {
                     <FormControl>
                         <FormLabel>Тип источника</FormLabel>
                         <Select size="lg" defaultValue={sourceType} onChange={(_, newValue) => setSourceType(newValue)}
-                            sx={{ '--Select-focusedHighlight': 'none' }}>
+                            sx={{ '--Select-focusedHighlight': 'none' }}
+                            slotProps={{
+                                listbox: {
+                                    placement: 'bottom-start',
+                                    sx: { minWidth: 160 },
+                                },
+                                button: {
+                                    sx: { '&:focus': { outline: 'none' } }
+                                }
+                            }}
+                        >
                             {['telegram'].map((value) => <Option key={value} value={value}>{source_types[value]}</Option>)}
                         </Select>
                     </FormControl>
@@ -273,19 +324,66 @@ export default function EditProject() {
                             ))}
                         </RadioGroup>
                     </Box>
-                    <Divider sx={{ display: { md: 'none' } }}>Начальный промт</Divider>
+                    <Divider sx={{ display: { md: 'none' } }}>Промты</Divider>
+                    <RadioGroup
+                        aria-labelledby="storage-label"
+                        defaultValue="512GB"
+                        size="lg"
+                        sx={{ gap: 1.5 }}
+                    >
+                        {project.promts.map((value) => (
+                            <Sheet
+                                key={value.id}
+                                sx={{
+                                    p: 2,
+                                    borderRadius: 'md',
+                                    boxShadow: 'sm',
+                                }}
+                            >
+                                <Radio
+                                    onClick={() => Projects.setCurrentPromt(project.id, value.id)}
+                                    label={`${value.description}`}
+                                    overlay
+                                    disableIcon
+                                    checked={value.id === project.current_promt}
+                                    value={value.description}
+                                    slotProps={{
+                                        label: ({ checked }) => ({
+                                            sx: {
+                                                fontWeight: 'lg',
+                                                fontSize: 'md',
+                                                color: checked ? 'text.primary' : 'text.secondary',
+                                            },
+                                        }),
+                                        action: ({ checked }) => ({
+                                            sx: (theme) => ({
+                                                ...(checked && {
+                                                    '--variant-borderWidth': '2px',
+                                                    '&&': {
+                                                        // && to increase the specificity to win the base :hover styles
+                                                        borderColor: theme.vars.palette.primary[500],
+                                                    },
+                                                }),
+                                            }),
+                                        }),
+                                    }}
+                                />
+                            </Sheet>
+                        ))}
+                    </RadioGroup>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, justifyContent: 'space-between' }}>
                         <Typography level="h4" color="neutral">
                             Название:
                         </Typography>
-                        <Input placeholder="Новый промт..." size="lg" />
+                        <Input value={currentPromtDescription} onChange={e => setCurrentPromtDescription(e.target.value)} placeholder="Промт..." size="lg" />
                     </Box>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, justifyContent: 'space-between' }}>
                         <Typography level="h4" color="neutral">
                             Текст промта:
                         </Typography>
-                        <TextArea placeholder="..." size="lg" sx={{ minWidth: { md: 300 } }} />
+                        <TextArea placeholder="..." size="lg" sx={{ minWidth: { md: 300 } }} value={currentPromtText} onChange={e => setCurrentPromtText(e.target.value)} />
                     </Box>
+                    <Button onClick={() => setAddPromtDialog(true)} variant="outlined" size="lg" color="neutral" sx={{ width: '100%' }}>Добавить промт</Button>
                 </Stack></Grid>
             <Grid xs={12} md={6} sx={{
                 h: '100%', px: { xs: 2, md: 4 },
@@ -326,4 +424,6 @@ export default function EditProject() {
                 <Button size="lg" sx={{ width: "100%" }} onClick={() => createNewProject()}>Сохранить</Button>
             </Grid>
         </Grid></>
-}
+})
+
+export default EditProject;

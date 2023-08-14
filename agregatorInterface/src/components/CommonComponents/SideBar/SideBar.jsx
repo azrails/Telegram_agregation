@@ -8,6 +8,7 @@ import ListItemButton from "@mui/joy/ListItemButton"
 import { Link, useLocation } from "react-router-dom"
 import { ColoredSchemeToggleMenu } from "../ColoredSchemeToggle";
 
+
 export default function SideBar() {
     const path = useLocation().pathname;
     return <Sheet
@@ -47,32 +48,41 @@ export default function SideBar() {
             variant="soft"
             color="neutral"
             onClick={() => closeSidebar()}
-            sx={{ display: { md: 'none' }, mt: -1, borderRadius: '50%' }}
+            sx={{
+                display: { md: 'none' }, mt: -1, borderRadius: '50%', '&:focus': {
+                    outline: 'none'
+                },
+            }}
+
         >
             <i data-feather="arrow-left" />
         </IconButton>
         <List sx={{ "--ListItem-radius": '8px', "--List-gap": '12px' }}>
             <ListItem>
-                {path == "/" ? 
-                <ListItemButton selected onClick={() => closeSidebar()}>
-                    <Link to="/">
-                        <i data-feather="home" />
-                    </Link>
-                </ListItemButton> : <ListItemButton  onClick={() => closeSidebar()}>
-                    <Link to="/">
-                        <i data-feather="home" />
-                    </Link>
-                </ListItemButton>}
+                {path == "/" ?
+                    <ListItemButton selected onClick={() => closeSidebar()}>
+                        <Link to="/">
+                            <i data-feather="home" />
+                        </Link>
+                    </ListItemButton> : <ListItemButton onClick={() => closeSidebar()}>
+                        <Link to="/">
+                            <i data-feather="home" />
+                        </Link>
+                    </ListItemButton>}
             </ListItem>
             <ListItem>
-                <ListItemButton>
-                    <i data-feather="clipboard" />
-                </ListItemButton>
-            </ListItem>
-            <ListItem>
-                <ListItemButton>
-                    <i data-feather="file-plus" />
-                </ListItemButton>
+                {path == '/sources' ?
+                    <ListItemButton selected onClick={() => closeSidebar()}>
+                        <Link to='sources'>
+                            <i data-feather="clipboard" />
+                        </Link>
+                    </ListItemButton>
+                    :
+                    <ListItemButton onClick={() => closeSidebar()}>
+                        <Link to="sources">
+                            <i data-feather="clipboard" />
+                        </Link>
+                    </ListItemButton>}
             </ListItem>
         </List>
         <List sx={{ mt: 'auto', flexGrow: 0, "--ListItem-radius": '8px', "--List-gap": '12px' }}>

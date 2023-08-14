@@ -23,7 +23,11 @@ const ProjectHeader = ({ title, description }) => {
             gap={1}
             spacing={2}
         >
-            <IconButton size="lg" onClick={() => navigate(-1)}>
+            <IconButton size="lg" onClick={() => navigate(-1)} sx={{
+                '&:focus': {
+                    outline: 'none'
+                },
+            }}>
                 <ArrowBackIcon />
             </IconButton>
             <div>
@@ -52,14 +56,14 @@ export default function ProjectPage() {
             const response = await $api.get(`projects/${projectId}`)
             setCurrentProject(response.data);
         })()
-    },[])
+    }, [])
     return <Grid container sx={{ m: 0, width: { xs: '100vw', md: '96vw' }, height: '100%' }}>
         <Grid xs={12} sx={{
             h: '100%', px: { xs: 2, md: 4 },
             pt: { xs: 8, md: 4 },
             pb: 5,
         }}>
-            <Stack spacing={2}>
+            <Stack spacing={2} sx={{overflow: 'hidden'}}>
                 <ProjectHeader title={currentProject?.title} description={currentProject?.description} />
                 <Divider />
                 {/* {currentProject?.summary.map(e => <TimeSummaryCard summary={e} key={e.date}/>)} */}

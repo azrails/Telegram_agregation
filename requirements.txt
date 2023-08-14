@@ -12,3 +12,4 @@ Pillow
 asgiref
 djangorestframework
 django-cors-headers
+openai

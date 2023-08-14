@@ -147,6 +147,11 @@ CELERY_RESULT_BACKEND = 'redis://redis:6379/0'
 
 MEDIA_URL = '/media/'
 
+REST_FRAMEWORK = {
+    'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
+    'PAGE_SIZE': 10
+}
+
 # Путь хранения картинок
 # MEDIA_ROOT = os.path.join(BASE_DIR, 'media/')
 # STATICFILES_DIRS = (os.path.join(BASE_DIR, 'static'),)

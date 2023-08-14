@@ -80,6 +80,9 @@ export default function ColoredSchemeToggle({ onClick, sx, ...props }) {
                 '& > *:last-of-type': {
                     display: mode === 'light' ? 'none' : 'initial',
                 },
+                '&:focus':{
+                    outline: 'none'
+                },
             },
             ...(Array.isArray(sx) ? sx : [sx]),
         ]}

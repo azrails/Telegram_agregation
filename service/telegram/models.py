@@ -2,6 +2,7 @@ from email import message
 from operator import mod
 from statistics import mode
 from django.db import models
+from django.utils import timezone
 # from django.db.models.ImageField
 
 class Groups(models.Model):
@@ -26,6 +27,13 @@ class Sources(models.Model):
     url = models.CharField(max_length=1000)
     type = models.CharField(choices=TYPE_CHOISES, default='telegram')
 
+    @property
+    def projects_list(self):
+        projects = []
+        for p in self.projects.all():
+            projects.append(p.title)
+        return projects
+
     def __str__(self) -> str:
         return self.url
 
@@ -37,6 +45,7 @@ class Projects(models.Model):
     update_time = models.TimeField()
     group_id = models.ForeignKey(Groups, related_name='projects', on_delete=models.SET_NULL, null=True)
     sourses = models.ManyToManyField(Sources, related_name='projects')
+    current_promt = models.IntegerField(null=True)
 
     def __str__(self) -> str:
         return self.title
@@ -52,6 +61,7 @@ class GptPosts(models.Model):
     summary = models.TextField(blank=True)
     project_id = models.ForeignKey(Projects, related_name='gpt_posts', on_delete=models.CASCADE)
     promt_id = models.ForeignKey(Promts, related_name='gpt_posts', on_delete=models.CASCADE)
+    date = models.DateTimeField(default=timezone.now)
 
 class Posts(models.Model):
     id = models.CharField(primary_key=True)
@@ -62,3 +72,4 @@ class Posts(models.Model):
 class Comments(models.Model):
     id = models.CharField(primary_key=True)
     comment_text = models.TextField()
+    source_id = models.ForeignKey(Sources, related_name='comments', on_delete=models.CASCADE, null=True)

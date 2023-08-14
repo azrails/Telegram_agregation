@@ -35,7 +35,7 @@ class PromtsResource(resources.ModelResource):
 
 class PromtsAdmin(ImportExportActionModelAdmin):
     resource_class = PromtsResource
-    list_display = [field.name for field in Promts._meta.get_fields()]
+    list_display = ['id', 'description', 'promt_text', 'project_id']
 
 class GptPostsResource(resources.ModelResource):
     class Meta:
