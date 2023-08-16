@@ -67,7 +67,7 @@ class GptPosts(models.Model):
     date = models.DateTimeField(default=timezone.now)
 
     def __str__(self):
-        return self.date
+        return str(self.date)
 
 class Posts(models.Model):
     id = models.CharField(primary_key=True)

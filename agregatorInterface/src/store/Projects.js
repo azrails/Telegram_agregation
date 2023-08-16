@@ -66,7 +66,12 @@ class Projects {
                 $api.post('promts/', { description: promtDescription, promt_text: promtText, project_id: response.data.id }).then(
                     action('createPromt', response => {
                         this.projects[0].current_promt = response.data.id;
-                        $api.put(`projects/${this.projects[0].id}/`, this.projects[0]);
+                        $api.put(`projects/${this.projects[0].id}/`, this.projects[0]).then(
+                            action('postCreatedFull', response => {
+                                this.projects[0] = response.data
+                                $api.get(`projects/${this.projects[0].id}/generate_posts`)
+                            })
+                        )
                     }), action('createPromtError', error => {
                         this.state = 'error'
                     })

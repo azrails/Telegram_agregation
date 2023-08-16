@@ -4,11 +4,17 @@ from .models import Projects, Sources, Promts, GptPosts
 from .serializers import ProjectsSerializer, SourcesSerializer, PromtSerializer, GptPostsSerializer
 from rest_framework.decorators import action
 from rest_framework.response import Response
+from telegram.tasks import create_project_update_data
+from rest_framework import status
 # Create your views here.
 
 class ProjectsViewSet(viewsets.ModelViewSet):
     queryset = Projects.objects.all()
     serializer_class = ProjectsSerializer
+    @action(detail=True, methods=['get'])
+    def generate_posts(self, request, pk=None):
+        create_project_update_data.delay(pk)
+        return Response({}, status=status.HTTP_202_ACCEPTED)
 
 class SourcesViewSet(viewsets.ModelViewSet):
     queryset = Sources.objects.all()

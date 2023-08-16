@@ -13,9 +13,10 @@ import os
 from django.core.files import File
 from .models import Sources, Posts, Comments, Projects, Promts, GptPosts
 import datetime
-from celery import group
+from celery import group, shared_task
 from telethon.errors import SessionPasswordNeededError
 import openai
+
 
 api_id = '28410116'
 api_hash = '2fc4498ba27db1a3b03576ad81d5440d'
@@ -69,6 +70,7 @@ def parse_telegram_chanel(source_id, channel_url: str, offset_date: datetime):
                     pass
     with client:
         client.loop.run_until_complete(task())
+        # print('finish parse')
     return f'chanel: {channel_url} updated'
 
 @app.task
@@ -105,9 +107,56 @@ def get_gpt_posts_hour():
                 GptPosts.objects.create(summary=response['choices'][0]['message']['content'], project_id=project,
                                         promt_id=current_promt)
 
-            
+@app.task
+def get_gpt_posts_day():
+    current_time = datetime.datetime.now(datetime.timezone.utc)
+    prev_hour_date = current_time - datetime.timedelta(days=1)
+    projects = Projects.objects.all()
+    for project in projects:
+        if project.update_time == datetime.time(0, 0):
+            posts = []
+            current_promt = Promts.objects.get(id=project.current_promt)
+            for source in project.sourses.all():
+                posts_l = source.posts.filter(date__range=[prev_hour_date, current_time])
+                for post in posts_l:
+                    posts.append(post.post_text)
+            if len(posts) != 0:
+                response = openai.ChatCompletion.create(
+                    model='gpt-3.5-turbo',
+                    messages = [
+                        {"role": "system", "content": f'{current_promt.promt_text}'},
+                        {"role": "user", "content": f'{" ".join(posts)}'},
+                    ]
+                )
+                GptPosts.objects.create(summary=response['choices'][0]['message']['content'], project_id=project,
+                                        promt_id=current_promt)
+       
 
-            
+@shared_task()
+def create_project_update_data(project_id):
+    project = Projects.objects.get(id=project_id)
+    current_date = datetime.datetime.now(datetime.timezone.utc)
+    prev_hour_date = current_date - datetime.timedelta(hours=1)
+    posts = []
+    current_promt = Promts.objects.get(id=project.current_promt)
+    for source in project.sourses.all():
+        if source.type == 'telegram':
+            parse_telegram_chanel(source.id ,source.url, prev_hour_date)
+    for source in project.sourses.all():
+        # print('go gpt')
+        posts_l = source.posts.filter(date__range=[prev_hour_date, current_date])
+        for post in posts_l:
+            posts.append(post.post_text)
+        if len(posts) != 0:
+            response = openai.ChatCompletion.create(
+                model='gpt-3.5-turbo',
+                messages = [
+                    {"role": "system", "content": f'{current_promt.promt_text}'},
+                    {"role": "user", "content": f'{" ".join(posts)}'},
+                ]
+            )
+            GptPosts.objects.create(summary=response['choices'][0]['message']['content'], project_id=project,
+                                    promt_id=current_promt)
         
 
 
