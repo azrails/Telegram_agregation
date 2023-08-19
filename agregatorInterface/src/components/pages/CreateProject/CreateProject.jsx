@@ -137,6 +137,7 @@ export default function CreateProject() {
                 <Stack spacing={2}>
                     <Divider>Выбрать источник</Divider>
                     <Autocomplete multiple options={sources}
+                        isOptionEqualToValue={(option, value) => option.title === value.title}
                         getOptionLabel={option => option.title}
                         value={usingSources}
                         onChange={(_, newValue) => setUsingSources(newValue)}
