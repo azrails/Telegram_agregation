@@ -14,9 +14,22 @@ import Card from "@mui/joy/Card";
 import CloseIcon from '@mui/icons-material/Close'
 import CardActions from "@mui/joy/CardActions"
 
+import Modal from '@mui/joy/Modal'
+import ModalDialog from '@mui/joy/ModalDialog'
+import EditIcon from '@mui/icons-material/Edit'
+import Sheet from '@mui/joy/Sheet';
+import Radio from "@mui/joy/Radio"
+import Button from "@mui/joy/Button";
 
-function PostCard({ id, date, summary, handleDeletePost }) {
-    const trueDate = new Date(date).toLocaleString()
+
+const dateOffset = {
+    '01:00:00': 1000 * 60 * 60,
+    '00:00:00': 1000 * 60 * 60 * 24
+}
+
+function PostCard({ id, date, summary, handleDeletePost, longType, setOpen, setEditPromtId, promtId, setPostId }) {
+    const trueDate = new Date(date)
+    const endDate = new Date(+trueDate - dateOffset[longType]);
     return <Card variant="outlined"
         orientation="horizontal"
         sx={{
@@ -32,7 +45,7 @@ function PostCard({ id, date, summary, handleDeletePost }) {
         <Stack sx={{ padding: { xs: 2, sm: 0 }, overflow: 'hidden' }} spacing={1} flex={1}>
             <Stack spacing={1} direction='row' justifyContent='space-between' alignItems='center'>
                 <Typography color="primary" fontSize='sm' fontWeight='lg'>
-                    {trueDate}
+                    {`${trueDate.toLocaleString()} - ${endDate.toLocaleString()}`}
                 </Typography>
             </Stack>
             <Typography color="neutral" level="body-sm" variant="plain">
@@ -45,6 +58,13 @@ function PostCard({ id, date, summary, handleDeletePost }) {
                 flex={1}
                 justifyContent="flex-end"
                 alignItems="center">
+                <IconButton size="md" onClick={() => { setOpen(true); setEditPromtId(promtId); setPostId(id) }} sx={{
+                    '&:focus': {
+                        outline: 'none'
+                    }
+                }}>
+                    <EditIcon />
+                </IconButton>
                 <IconButton size="md" onClick={() => handleDeletePost(id)}>
                     <CloseIcon />
                 </IconButton>
@@ -95,6 +115,9 @@ const ProjectPage = observer(() => {
     const [gptPosts, setGptPosts] = useState([]);
     const [page, setPage] = useState(1);
     const [maxCounts, setMaxCounts] = useState(-1);
+    const [open, setOpen] = useState(false);
+    const [editPromtId, setEditPromtId] = useState(null);
+    const [postId, setPostId] = useState(null);
 
     const loadPosts = async () => {
         if (maxCounts !== gptPosts.length) {
@@ -138,19 +161,93 @@ const ProjectPage = observer(() => {
         }
     }, [gptPosts])
 
+    const regeneratePost = async (postId) => {
+        const position = gptPosts.findIndex(e => e.id === postId)
+        setOpen(false);
+        const response = await $api.post(`gpt_posts/${postId}/generate_posts/`, {post_id: postId, 
+            project_id: projectId,
+            long_type: gptPosts[position].long_type,
+            date: new Date(gptPosts[position].date).getTime(),
+            promt_id: editPromtId
+        });
+        setGptPosts([response.data ,...gptPosts]);
+    }
 
-    return <Grid container sx={{ m: 0, width: { xs: '100vw', md: '96vw' }, height: '100%' }}>
-        <Grid xs={12} sx={{
-            h: '100%', px: { xs: 2, md: 4 },
-            pt: { xs: 8, md: 4 },
-            pb: 5,
-        }}>
-            <Stack spacing={2} sx={{ overflow: 'hidden' }} id='projects-tape'>
-                <ProjectHeader title={currentProject?.title} description={currentProject?.description} />
-                <Divider />
-                {gptPosts.map(post => (<PostCard key={post.id} id={post.id} date={post.date} summary={post.summary} handleDeletePost={handleDeletePost} />))}
-            </Stack>
-        </Grid></Grid>
+    return <>
+        <Modal open={open} onClose={() => { setOpen(false); setEditPromtId(null); setPostId(null) }}>
+            <ModalDialog
+                aria-labelledby="basic-modal-dialog-title"
+                aria-describedby="basic-modal-dialog-description"
+                sx={{ maxWidth: 500 }}
+            >
+                <Typography id="basic-modal-dialog-title" level="h2" textAlign='center'>
+                    Пересоздать пост
+                </Typography>
+                <Stack spacing={2}>
+                    <Divider>Доступные промты</Divider>
+                    {currentProject.promts.map((value) => (
+                        <Sheet
+                            key={value.id}
+                            sx={{
+                                p: 2,
+                                borderRadius: 'md',
+                                boxShadow: 'sm',
+                            }}
+                        >
+                            <Radio
+                                label={`${value.description}`}
+                                overlay
+                                disableIcon
+                                onClick={() => setEditPromtId(value.id)}
+                                checked={value.id === editPromtId}
+                                value={value.description}
+                                slotProps={{
+                                    label: ({ checked }) => ({
+                                        sx: {
+                                            fontWeight: 'lg',
+                                            fontSize: 'md',
+                                            color: checked ? 'text.primary' : 'text.secondary',
+                                        },
+                                    }),
+                                    action: ({ checked }) => ({
+                                        sx: (theme) => ({
+                                            ...(checked && {
+                                                '--variant-borderWidth': '2px',
+                                                '&&': {
+                                                    // && to increase the specificity to win the base :hover styles
+                                                    borderColor: theme.vars.palette.primary[500],
+                                                },
+                                            }),
+                                        }),
+                                    }),
+                                }}
+                            />
+                        </Sheet>
+                    ))}
+                    <Button
+                        onClick={() => regeneratePost(postId)}
+                    >Пересоздать</Button>
+                </Stack>
+            </ModalDialog>
+        </Modal>
+        <Grid container sx={{ m: 0, width: { xs: '100vw', md: '96vw' }, height: '100%' }}>
+            <Grid xs={12} sx={{
+                h: '100%', px: { xs: 2, md: 4 },
+                pt: { xs: 8, md: 4 },
+                pb: 5,
+            }}>
+                <Stack spacing={2} sx={{ overflow: 'hidden' }} id='projects-tape'>
+                    <ProjectHeader title={currentProject?.title} description={currentProject?.description} />
+                    <Divider />
+                    {gptPosts.map(post => (<PostCard key={post.id} id={post.id} date={post.date} summary={post.summary} handleDeletePost={handleDeletePost}
+                        longType={post.long_type}
+                        setOpen={setOpen}
+                        promtId={post.promt_id}
+                        setEditPromtId={setEditPromtId}
+                        setPostId={setPostId}
+                    />))}
+                </Stack>
+            </Grid></Grid></>
 })
 
 export default ProjectPage;

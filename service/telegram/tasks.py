@@ -11,7 +11,7 @@ from PIL import Image
 from asgiref.sync import sync_to_async
 import os
 from django.core.files import File
-from .models import Sources, Posts, Comments, Projects, Promts, GptPosts
+from .models import Sources, Posts, Comments, Projects, Promts, GptPosts, TGUser
 import datetime
 from celery import group, shared_task
 from telethon.errors import SessionPasswordNeededError
@@ -33,11 +33,19 @@ def num_tokens_from_string(string: str, encoding_name: str) -> int:
     return num_tokens
 
 @sync_to_async
-def create_post(source_id, post_id, date, post_text):
+def create_post(source_id, post_id, date, post_text, user_object):
+    if len(user_object) != 0:
+        try:
+            user = TGUser.objects.get(**user_object)
+        except Exception as e:
+            user = TGUser.objects.create(**user_object)
     try:
         post = Posts.objects.filter(id = (str(source_id) + '@' + str(post_id))).exists()
         if not post and post_text not in ['', ' ', '\n']:
-            new_post = Posts(id=(str(source_id) + '@' + str(post_id)), post_text=post_text, date=date, source_id=Sources.objects.get(id=source_id))
+            if len(user_object) != 0:
+                new_post = Posts(id=(str(source_id) + '@' + str(post_id)), post_text=post_text, date=date, source_id=Sources.objects.get(id=source_id), user_id=user)
+            else:
+                new_post = Posts(id=(str(source_id) + '@' + str(post_id)), post_text=post_text, date=date, source_id=Sources.objects.get(id=source_id))
             new_post.save()
     except Exception as e:
         print(f'\n\n {e} \n\n')
@@ -61,8 +69,14 @@ def parse_telegram_chanel(source_id, channel_url: str, offset_date: datetime):
             post_text = str(message.text)
             date=message.date
             post_id=message.id
+            user_object = {}
+            try:
+                user = (await message.get_sender())
+                user_object = {'username': str(user.username), 'user_id': user.id}
+            except Exception as e:
+                print(e)
             if post_id:
-                await create_post(source_id, post_id, date, post_text)
+                await create_post(source_id, post_id, date, post_text, user_object)
                 try:
                     async for comment in client.iter_messages(channel_url, reply_to=post_id,):
                         comment_id = comment.id
@@ -111,7 +125,15 @@ def get_posts_dict(project, prev_hour_date, current_date) -> dict:
         if len(posts_l) != 0:
             posts[f'{source.title}'] = []
             for post in posts_l:
+                user = 'аноним'
+                try:
+                    user_object = post.user_id
+                    if user_object is not None:
+                        user = user_object.username
+                except Exception as e:
+                    print(e)
                 #adding messages for source grouping
+                posts[f'{source.title}'].append(f'[{user}]:')
                 posts[f'{source.title}'].append(post.post_text)
     return posts
 
@@ -169,7 +191,7 @@ def get_gpt_posts_day():
             posts = get_posts_dict(project, prev_hour_date, current_time)
             if len(posts) != 0:
                 responces_text = get_responces_from_gpt(current_promt, posts)
-                GptPosts.objects.create(summary=' '.join(responces_text), project_id=project, promt_id=current_promt)
+                GptPosts.objects.create(summary=' '.join(responces_text), project_id=project, promt_id=current_promt, long_type=datetime.time(0,0))
     return 'Succes'
 
 
@@ -190,3 +212,15 @@ def create_project_update_data(project_id):
         GptPosts.objects.create(summary=' '.join(responces_text), project_id=project, promt_id=current_promt)
     return f'from posts: {len(posts)}' if len(posts) > 0 else 0
 
+@shared_task()
+def regenerate_post(long_type, date, project_id, promt_id):
+    project = Projects.objects.get(id=project_id)
+    current_date = date
+    prev_date = current_date - datetime.timedelta(hours=1) if long_type == 1 else current_date - datetime.timedelta(hours=24)
+    current_promt = Promts.objects.get(id=promt_id)
+    posts = get_posts_dict(project, prev_date, current_date)
+    instance = None
+    if len(posts) != 0:
+        responces_text = get_responces_from_gpt(current_promt, posts)
+        instance = GptPosts.objects.create(summary=' '.join(responces_text), project_id=project, promt_id=current_promt, date=current_date)
+    return instance

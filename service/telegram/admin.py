@@ -3,7 +3,16 @@ from import_export import resources
 from import_export.admin import ImportExportActionModelAdmin
 from import_export.widgets import ForeignKeyWidget, ManyToManyWidget
 
-from .models import Projects, Groups, Sources, Promts, GptPosts, Posts, Comments
+from .models import Projects, Groups, Sources, Promts, GptPosts, Posts, Comments, TGUser
+
+class TGUserResource(resources.ModelResource):
+    class Meta:
+        model = TGUser
+
+class TGUserAdmin(ImportExportActionModelAdmin):
+    resource_class = TGUserResource
+    list_display = ['user_id', 'username']
+
 
 class ProjectsResource(resources.ModelResource):
     class Meta:
@@ -68,3 +77,4 @@ admin.site.register(Promts, PromtsAdmin)
 admin.site.register(GptPosts, GptPostsAdmin)
 admin.site.register(Posts, PostsAdmin)
 admin.site.register(Comments, CommentsAdmin)
+admin.site.register(TGUser, TGUserAdmin)

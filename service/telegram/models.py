@@ -3,7 +3,15 @@ from operator import mod
 from statistics import mode
 from django.db import models
 from django.utils import timezone
+import datetime
 # from django.db.models.ImageField
+
+class TGUser(models.Model):
+    user_id = models.CharField(blank=True, null=True, default='0')
+    username = models.CharField(blank=True, null=True, default='Аноним')
+
+    def __str__(self) -> str:
+        return self.username
 
 class Groups(models.Model):
     GROUPS_CHOISES = [
@@ -65,6 +73,11 @@ class GptPosts(models.Model):
     project_id = models.ForeignKey(Projects, related_name='gpt_posts', on_delete=models.CASCADE)
     promt_id = models.ForeignKey(Promts, related_name='gpt_posts', on_delete=models.CASCADE)
     date = models.DateTimeField(default=timezone.now)
+    long_type = models.TimeField(default=datetime.time(1,0))
+    creation_date = models.DateTimeField(default=timezone.now)
+    
+    class Meta:
+        ordering = ['-creation_date']
 
     def __str__(self):
         return str(self.date)
@@ -74,6 +87,7 @@ class Posts(models.Model):
     post_text = models.TextField(blank=True)
     date = models.DateTimeField()
     source_id = models.ForeignKey(Sources, related_name='posts', on_delete=models.CASCADE)
+    user_id = models.ForeignKey(TGUser, related_name='posts', on_delete=models.DO_NOTHING, null=True)
 
 
 class Comments(models.Model):

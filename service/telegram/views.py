@@ -6,15 +6,20 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 from telegram.tasks import create_project_update_data
 from rest_framework import status
+import datetime
+from telegram.tasks import regenerate_post
 # Create your views here.
 
 class ProjectsViewSet(viewsets.ModelViewSet):
     queryset = Projects.objects.all()
     serializer_class = ProjectsSerializer
+
     @action(detail=True, methods=['get'])
     def generate_posts(self, request, pk=None):
         create_project_update_data.delay(pk)
         return Response({}, status=status.HTTP_202_ACCEPTED)
+
+
 
 class SourcesViewSet(viewsets.ModelViewSet):
     queryset = Sources.objects.all()
@@ -27,6 +32,18 @@ class PromtsViewSet(viewsets.ModelViewSet):
 class GptPostsViewSet(viewsets.ModelViewSet):
     queryset = GptPosts.objects.all()
     serializer_class = GptPostsSerializer
+
+    @action(detail=True, methods=['post'], url_name=r'generate_posts/(?P<pk>[0-9]+)')
+    def generate_posts(self, request, pk=None):
+        print(f'\n\n {request.data} \n\n')
+        project_id = request.data.pop('project_id')
+        long_type = request.data.pop('long_type')
+        date = request.data.pop('date')
+        promt_id = request.data.pop('promt_id')
+        instance = regenerate_post(datetime.datetime.strptime(long_type, '%H:%M:%S').hour, datetime.datetime.fromtimestamp(date/1000.0), project_id, promt_id)
+        if instance == None:
+            return Response({})
+        return Response(self.get_serializer(instance).data)
 
     @action(detail=False, methods=['get'], url_path=r'project_posts/(?P<pk>[0-9]+)')
     def project_posts(self, request, pk=None):
