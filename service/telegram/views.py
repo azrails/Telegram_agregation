@@ -35,13 +35,10 @@ class GptPostsViewSet(viewsets.ModelViewSet):
 
     @action(detail=True, methods=['post'], url_name=r'generate_posts/(?P<pk>[0-9]+)')
     def generate_posts(self, request, pk=None):
-        print('\n\nAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA\n\n')
-        print(f'\n\n {request.data} \n\n')
         project_id = request.data.pop('project_id')
         long_type = request.data.pop('long_type')
         date = request.data.pop('date')
         promt_id = request.data.pop('promt_id')
-        print(date)
         instance = regenerate_post(datetime.datetime.strptime(long_type, '%H:%M:%S').hour, datetime.datetime.fromtimestamp(date/1000.0), project_id, promt_id)
         if instance == None:
             return Response({})

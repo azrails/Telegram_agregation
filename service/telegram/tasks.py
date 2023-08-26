@@ -18,6 +18,10 @@ from telethon.errors import SessionPasswordNeededError
 import openai
 import tiktoken
 from django.utils.timezone import make_aware
+import sys
+sys.setrecursionlimit(10000)
+
+
 
 
 api_id = '28410116'
@@ -115,6 +119,25 @@ def get_gpt_response(promt_text: str, posts_text) -> str:
     )
     return response['choices'][0]['message']['content']
 
+def comments_tree(comm_id):
+    comm_level = Comments.objects.filter(id__icontains=f'@{comm_id}@')
+    comments = []
+    if len(comm_level) != 0:
+        for comm in comm_level:
+            coment_id = comm.id.split('@')[2]
+            user = 'аноним'
+            try:
+                user_object = comm.user_id
+                if user_object is not None:
+                    user = user_object.username
+            except Exception as e:
+                print(e)
+            comments.append(f'[{user}]:')
+            comments.append(comm.comment_text)
+            comments.extend(comments_tree(coment_id, arr))
+    return comments
+    
+
 def get_posts_dict(project, prev_hour_date, current_date) -> dict:
     posts = {}
     #all posts in sources
@@ -135,10 +158,11 @@ def get_posts_dict(project, prev_hour_date, current_date) -> dict:
                 #adding messages for source grouping
                 posts[f'{source.title}'].append(f'[{user}]:')
                 posts[f'{source.title}'].append(post.post_text)
-                comments = Comments.objects.filter(id__icontains=post.id)
+                comments = Comments.objects.filter(id__icontains=f'@{post.id}@')
                 if len(comments) != 0:
                     posts[f'{source.title}'].append('[comments]:')
                     for comm in comments:
+                        comm_id = comm.id.split('@')[2]
                         user = 'аноним'
                         try:
                             user_object = comm.user_id
@@ -148,6 +172,8 @@ def get_posts_dict(project, prev_hour_date, current_date) -> dict:
                             print(e)
                         posts[f'{source.title}'].append(f'[{user}]:')
                         posts[f'{source.title}'].append(comm.comment_text)
+                        posts[f'{source.title}'].extend(comments_tree(comm_id))
+
     return posts
 
 def get_responces_from_gpt(current_promt, posts):
@@ -230,13 +256,9 @@ def regenerate_post(long_type, date, project_id, promt_id):
     project = Projects.objects.get(id=project_id)
     current_date = make_aware(date)
     prev_date = current_date - datetime.timedelta(hours=1) if long_type == 1 else current_date - datetime.timedelta(days=1)
-    print(f'\n\n\n\n {current_date} aaaa {prev_date}\n\n\n')
     current_promt = Promts.objects.get(id=promt_id)
     posts = get_posts_dict(project, prev_date, current_date)
     instance = None
-    print(posts)
-    print(current_promt)
-    print('\n\n')
     if len(posts) != 0:
         pass
         responces_text = get_responces_from_gpt(current_promt, posts)
