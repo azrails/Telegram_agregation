@@ -94,3 +94,4 @@ class Comments(models.Model):
     id = models.CharField(primary_key=True)
     comment_text = models.TextField()
     source_id = models.ForeignKey(Sources, related_name='comments', on_delete=models.CASCADE, null=True)
+    user_id = models.ForeignKey(TGUser, related_name='comments', on_delete=models.DO_NOTHING, null=True)

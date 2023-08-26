@@ -17,6 +17,7 @@ from celery import group, shared_task
 from telethon.errors import SessionPasswordNeededError
 import openai
 import tiktoken
+from django.utils.timezone import make_aware
 
 
 api_id = '28410116'
@@ -52,11 +53,19 @@ def create_post(source_id, post_id, date, post_text, user_object):
 
 
 @sync_to_async
-def create_comment(source_id, post_id, comment_id, comment_text):
+def create_comment(source_id, post_id, comment_id, comment_text, user_object):
+    if len(user_object) != 0:
+        try:
+            user = TGUser.objects.get(**user_object)
+        except Exception as e:
+            user = TGUser.objects.create(**user_object)
     try:
         comment = Comments.objects.filter(id = (str(source_id) + '@' + str(post_id) + '@' + str(comment_id))).exists()
-        if not comment:
-                new_comment = Comments(id=(str(source_id) + '@' + str(post_id) + '@' + str(comment_id)), comment_text=comment_text, source_id=Sources.objects.get(id=source_id))
+        if not comment and comment_text not in ['', ' ', '\n']:
+                if len(user_object) != 0:
+                    new_comment = Comments(id=(str(source_id) + '@' + str(post_id) + '@' + str(comment_id)), comment_text=comment_text, source_id=Sources.objects.get(id=source_id), user_id=user)
+                else:
+                    new_comment = Comments(id=(str(source_id) + '@' + str(post_id) + '@' + str(comment_id)), comment_text=comment_text, source_id=Sources.objects.get(id=source_id))
                 new_comment.save()
     except Exception as e:
         print(f'\n\n {e} \n\n')
@@ -76,19 +85,10 @@ def parse_telegram_chanel(source_id, channel_url: str, offset_date: datetime):
             except Exception as e:
                 print(e)
             if post_id:
-                await create_post(source_id, post_id, date, post_text, user_object)
-                try:
-                    async for comment in client.iter_messages(channel_url, reply_to=post_id,):
-                        comment_id = comment.id
-                        try:
-                            Posts.objects.get(id__icontains=f'@{comment_id}')
-                            comment_text = str(comment.text)
-                            if comment_id:
-                                await create_comment(source_id, post_id, comment_id, comment_text)
-                        except:
-                            pass
-                except Exception as e:
-                    pass
+                if message.reply_to is not None:
+                    await create_comment(source_id, message.reply_to.reply_to_msg_id, post_id, post_text, user_object)
+                else:
+                    await create_post(source_id, post_id, date, post_text, user_object)
     with client:
         client.loop.run_until_complete(task())
         # print('finish parse')
@@ -135,6 +135,19 @@ def get_posts_dict(project, prev_hour_date, current_date) -> dict:
                 #adding messages for source grouping
                 posts[f'{source.title}'].append(f'[{user}]:')
                 posts[f'{source.title}'].append(post.post_text)
+                comments = Comments.objects.filter(id__icontains=post.id)
+                if len(comments) != 0:
+                    posts[f'{source.title}'].append('[comments]:')
+                    for comm in comments:
+                        user = 'аноним'
+                        try:
+                            user_object = comm.user_id
+                            if user_object is not None:
+                                user = user_object.username
+                        except Exception as e:
+                            print(e)
+                        posts[f'{source.title}'].append(f'[{user}]:')
+                        posts[f'{source.title}'].append(comm.comment_text)
     return posts
 
 def get_responces_from_gpt(current_promt, posts):
@@ -215,12 +228,17 @@ def create_project_update_data(project_id):
 @shared_task()
 def regenerate_post(long_type, date, project_id, promt_id):
     project = Projects.objects.get(id=project_id)
-    current_date = date
+    current_date = make_aware(date)
     prev_date = current_date - datetime.timedelta(hours=1) if long_type == 1 else current_date - datetime.timedelta(days=1)
+    print(f'\n\n\n\n {current_date} aaaa {prev_date}\n\n\n')
     current_promt = Promts.objects.get(id=promt_id)
     posts = get_posts_dict(project, prev_date, current_date)
     instance = None
+    print(posts)
+    print(current_promt)
+    print('\n\n')
     if len(posts) != 0:
+        pass
         responces_text = get_responces_from_gpt(current_promt, posts)
         instance = GptPosts.objects.create(summary=' '.join(responces_text), project_id=project, promt_id=current_promt, date=current_date)
     return instance
