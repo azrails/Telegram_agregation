@@ -216,7 +216,7 @@ def create_project_update_data(project_id):
 def regenerate_post(long_type, date, project_id, promt_id):
     project = Projects.objects.get(id=project_id)
     current_date = date
-    prev_date = current_date - datetime.timedelta(hours=1) if long_type == 1 else current_date - datetime.timedelta(hours=24)
+    prev_date = current_date - datetime.timedelta(hours=1) if long_type == 1 else current_date - datetime.timedelta(days=1)
     current_promt = Promts.objects.get(id=promt_id)
     posts = get_posts_dict(project, prev_date, current_date)
     instance = None

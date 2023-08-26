@@ -170,7 +170,9 @@ const ProjectPage = observer(() => {
             date: new Date(gptPosts[position].date).getTime(),
             promt_id: editPromtId
         });
-        setGptPosts([response.data ,...gptPosts]);
+	if (Object.keys(response.data).length !== 0){
+        	setGptPosts([response.data ,...gptPosts]);
+	};
     }
 
     return <>

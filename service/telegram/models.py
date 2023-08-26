@@ -77,7 +77,7 @@ class GptPosts(models.Model):
     creation_date = models.DateTimeField(default=timezone.now)
     
     class Meta:
-        ordering = ['-creation_date']
+        ordering = ['-creation_date','-date']
 
     def __str__(self):
         return str(self.date)
