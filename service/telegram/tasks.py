@@ -158,7 +158,7 @@ def get_posts_dict(project, prev_hour_date, current_date) -> dict:
                 #adding messages for source grouping
                 posts[f'{source.title}'].append(f'[{user}]:')
                 posts[f'{source.title}'].append(post.post_text)
-                comments = Comments.objects.filter(id__icontains=f'@{post.id}@')
+                comments = Comments.objects.filter(id__icontains=f'@{post.id.split("@")[1]}@')
                 if len(comments) != 0:
                     posts[f'{source.title}'].append('[comments]:')
                     for comm in comments:
@@ -207,6 +207,7 @@ def get_responces_from_gpt(current_promt, posts):
 
 @app.task
 def get_gpt_posts_hour():
+    posts = []
     current_time = datetime.datetime.now(datetime.timezone.utc)
     prev_hour_date = current_time - datetime.timedelta(hours=1)
     projects = Projects.objects.all()
@@ -217,13 +218,14 @@ def get_gpt_posts_hour():
             if len(posts) != 0:
                 responces_text = get_responces_from_gpt(current_promt, posts)
                 GptPosts.objects.create(summary=' '.join(responces_text), project_id=project, promt_id=current_promt)
-    return 'Succes'
+    return posts
 
 @app.task
 def get_gpt_posts_day():
     current_time = datetime.datetime.now(datetime.timezone.utc)
     prev_hour_date = current_time - datetime.timedelta(days=1)
     projects = Projects.objects.all()
+    posts = []
     for project in projects:
         if project.update_time == datetime.time(0, 0):
             current_promt = Promts.objects.get(id=project.current_promt)
@@ -231,7 +233,7 @@ def get_gpt_posts_day():
             if len(posts) != 0:
                 responces_text = get_responces_from_gpt(current_promt, posts)
                 GptPosts.objects.create(summary=' '.join(responces_text), project_id=project, promt_id=current_promt, long_type=datetime.time(0,0))
-    return 'Succes'
+    return posts
 
 
 @shared_task()
@@ -260,7 +262,6 @@ def regenerate_post(long_type, date, project_id, promt_id):
     posts = get_posts_dict(project, prev_date, current_date)
     instance = None
     if len(posts) != 0:
-        pass
         responces_text = get_responces_from_gpt(current_promt, posts)
         instance = GptPosts.objects.create(summary=' '.join(responces_text), project_id=project, promt_id=current_promt, date=current_date)
     return instance
