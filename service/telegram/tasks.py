@@ -134,7 +134,7 @@ def comments_tree(comm_id):
                 print(e)
             comments.append(f'[{user}]:')
             comments.append(comm.comment_text)
-            comments.extend(comments_tree(coment_id, arr))
+            comments.extend(comments_tree(coment_id))
     return comments
     
 
@@ -263,5 +263,6 @@ def regenerate_post(long_type, date, project_id, promt_id):
     instance = None
     if len(posts) != 0:
         responces_text = get_responces_from_gpt(current_promt, posts)
-        instance = GptPosts.objects.create(summary=' '.join(responces_text), project_id=project, promt_id=current_promt, date=current_date)
+        instance = GptPosts.objects.create(summary=' '.join(responces_text), project_id=project, promt_id=current_promt, date=current_date, 
+                                           long_type=datetime.time(1,0) if long_type == 1 else datetime.time(0,0))
     return instance
