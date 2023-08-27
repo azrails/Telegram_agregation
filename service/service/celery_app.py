@@ -22,6 +22,6 @@ app.conf.beat_schedule = {
     },
     'task3': { 
         'task': 'telegram.tasks.get_gpt_posts_day',
-        'schedule': crontab(hour=0, minute=0),
+        'schedule': crontab(hour=21, minute=0),
     },
 }
