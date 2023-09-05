@@ -50,9 +50,14 @@ class Projects {
     modifyProjectById(id, content) {
         const { promtDescription, promtText, ...newContent } = content;
         const position = this.projects.findIndex(e => e.id === id)
+        const prev_time_value = this.projects[position].update_time
         $api.patch(`promts/${this.projects[position].current_promt}/`, { description: promtDescription, promt_text: promtText })
         $api.put(`projects/${id}/`, newContent).then(action('updateProject', response => {
             this.projects[position] = response.data
+            if (this.projects[position].update_time != prev_time_value){
+                console.log(this.projects[position].update_time, prev_time_value)
+                $api.get(`projects/${this.projects[position].id}/generate_posts`)
+            }
         }), action('updatePromtError', error => {
             this.state = 'error'
         }))

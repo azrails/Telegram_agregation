@@ -20,7 +20,6 @@ class ProjectsViewSet(viewsets.ModelViewSet):
         return Response({}, status=status.HTTP_202_ACCEPTED)
 
 
-
 class SourcesViewSet(viewsets.ModelViewSet):
     queryset = Sources.objects.all()
     serializer_class = SourcesSerializer

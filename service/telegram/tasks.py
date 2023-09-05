@@ -19,13 +19,13 @@ import openai
 import tiktoken
 from django.utils.timezone import make_aware
 import sys
+import json
+from django.core.serializers.json import DjangoJSONEncoder
+
 sys.setrecursionlimit(10000)
 
-
-
-
-api_id = '28410116'
-api_hash = '2fc4498ba27db1a3b03576ad81d5440d'
+api_id = '21794783'
+api_hash = '4d8880bc0cfa9c67838f03c21edcf3f7'
 session='anon'
 openai.api_key = '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'
 GPT_MODEL='gpt-3.5-turbo-16k'
@@ -105,7 +105,10 @@ def parse_data():
     offset_date = current_date - datetime.timedelta(minutes=30)
     for source in sources:
         if source.type == 'telegram':
-            parse_telegram_chanel(source.id ,source.url, offset_date)
+            try:
+                parse_telegram_chanel(source.id ,source.url, offset_date)
+            except Exception as e:
+                pass
     return 'Updates complited'
 
 
@@ -240,18 +243,26 @@ def get_gpt_posts_day():
 def create_project_update_data(project_id):
     project = Projects.objects.get(id=project_id)
     current_date = datetime.datetime.now(datetime.timezone.utc)
-    prev_hour_date = current_date - datetime.timedelta(hours=1)
+    if project.update_time == datetime.time(1, 0):
+        date_timestamp = datetime.timedelta(hours=1) 
+    else:
+        date_timestamp = datetime.timedelta(hours=24)
+    prev_hour_date = current_date - date_timestamp
     current_promt = Promts.objects.get(id=project.current_promt)
     for source in project.sourses.all():
         if source.type == 'telegram':
             parse_telegram_chanel(source.id ,source.url, prev_hour_date)
-
     posts = get_posts_dict(project, prev_hour_date, current_date)
 
     if len(posts) != 0:
         responces_text = get_responces_from_gpt(current_promt, posts)
-        GptPosts.objects.create(summary=' '.join(responces_text), project_id=project, promt_id=current_promt)
-    return f'from posts: {len(posts)}' if len(posts) > 0 else 0
+        GptPosts.objects.create(summary=' '.join(responces_text), project_id=project, promt_id=current_promt, long_type=project.update_time)
+    return json.dumps(
+        {'posts': posts, 'project_time': str(project.update_time), 'date_timestamp': str(date_timestamp)},
+        sort_keys=True,
+        indent=1,
+        cls=DjangoJSONEncoder
+        )
 
 @shared_task()
 def regenerate_post(long_type, date, project_id, promt_id):
