@@ -149,7 +149,7 @@ def get_posts_dict(project, prev_hour_date, current_date) -> dict:
         posts_l = source.posts.filter(date__range=[prev_hour_date, current_date])
         # no reason create zero posts public key
         if len(posts_l) != 0:
-            posts[f'channel_name:{source.title},channel_url:{source.url}'] = []
+            posts[f'source_title:{source.title},source_url:{source.url}'] = []
             for post in posts_l:
                 user = 'аноним'
                 try:
@@ -159,11 +159,11 @@ def get_posts_dict(project, prev_hour_date, current_date) -> dict:
                 except Exception as e:
                     print(e)
                 #adding messages for source grouping
-                posts[f'channel_name:{source.title},channel_url:{source.url}'].append(f'[username:{user},message_id:{post.id.split("@")[1]}]:')
-                posts[f'channel_name:{source.title},channel_url:{source.url}'].append(post.post_text)
+                posts[f'source_title:{source.title},source_url:{source.url}'].append(f'[username:{user},message_id:{post.id.split("@")[1]}]:')
+                posts[f'source_title:{source.title},source_url:{source.url}'].append(post.post_text)
                 comments = Comments.objects.filter(id__icontains=f'@{post.id.split("@")[1]}@')
                 if len(comments) != 0:
-                    posts[f'channel_name:{source.title},channel_url:{source.url}'].append('[comments]:')
+                    posts[f'source_title:{source.title},source_url:{source.url}'].append('[comments]:')
                     for comm in comments:
                         comm_id = comm.id.split('@')[2]
                         user = 'аноним'
@@ -173,9 +173,9 @@ def get_posts_dict(project, prev_hour_date, current_date) -> dict:
                                 user = user_object.username
                         except Exception as e:
                             print(e)
-                        posts[f'channel_name:{source.title},channel_url:{source.url}'].append(f'[username:{user},message_id:{comm_id}]:')
-                        posts[f'channel_name:{source.title},channel_url:{source.url}'].append(comm.comment_text)
-                        posts[f'channel_name:{source.title},channel_url:{source.url}'].extend(comments_tree(comm_id))
+                        posts[f'source_title:{source.title},source_url:{source.url}'].append(f'[username:{user},message_id:{comm_id}]:')
+                        posts[f'source_title:{source.title},source_url:{source.url}'].append(comm.comment_text)
+                        posts[f'source_title:{source.title},source_url:{source.url}'].extend(comments_tree(comm_id))
 
     return posts
 
