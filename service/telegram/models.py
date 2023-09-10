@@ -43,7 +43,7 @@ class Sources(models.Model):
         return projects
 
     def __str__(self) -> str:
-        return self.url
+        return str(self.url)
 
 
 class Projects(models.Model):

@@ -9,6 +9,7 @@ import { Link, useLocation } from "react-router-dom"
 import { ColoredSchemeToggleMenu } from "../ColoredSchemeToggle";
 
 
+
 export default function SideBar() {
     const path = useLocation().pathname;
     return <Sheet
@@ -84,14 +85,23 @@ export default function SideBar() {
                         </Link>
                     </ListItemButton>}
             </ListItem>
+            <ListItem>
+                {path == '/chat' ?
+                    <ListItemButton selected onClick={() => closeSidebar()}>
+                        <Link to='chat'>
+                            <i data-feather="message-square" />
+                        </Link>
+                    </ListItemButton>
+                    :
+                    <ListItemButton onClick={() => closeSidebar()}>
+                        <Link to="chat">
+                            <i data-feather="message-square" />
+                        </Link>
+                    </ListItemButton>}
+            </ListItem>
         </List>
         <List sx={{ mt: 'auto', flexGrow: 0, "--ListItem-radius": '8px', "--List-gap": '12px' }}>
             <ColoredSchemeToggleMenu sx={{ display: { xs: 'none', md: 'inline-flex' } }} />
-            <ListItem>
-                <ListItemButton>
-                    <i data-feather="settings" />
-                </ListItemButton>
-            </ListItem>
         </List>
     </Sheet>
 }

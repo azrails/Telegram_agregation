@@ -96,13 +96,24 @@ const EditProject = observer(() => {
         setUsingSources(new_list);
     }
 
-    const createNewProject = () => {
+    const createNewProject = async () => {
+        const validSources = []
+        for (let source of usingSources){
+            if (source.hasOwnProperty('id')){
+                validSources.push(source)
+            }
+            else{
+                const response = await $api.post(`sources/`, source)
+                console.log(response.data)
+                validSources.push(response.data)
+            }
+        }
         Projects.modifyProjectById(project.id, {
             ...project,
             title: projectTitle,
             description: projectDescription,
             update_time: time,
-            sourses: usingSources,
+            sourses: validSources,
             promtDescription: currentPromtDescription,
             promtText: currentPromtText
         })
@@ -126,13 +137,14 @@ const EditProject = observer(() => {
     }
 
     const createNewPromt = () => {
-        Projects.createPromt(project.id, {description: addPromtDescription, promt_text: addPromtText, project_id: project.id})
+        Projects.createPromt(project.id, { description: addPromtDescription, promt_text: addPromtText, project_id: project.id })
     }
 
     useEffect(() => {
         (async () => {
             const results = (await $api.get('sources/')).data
-            setSources(results.results)
+            const extraSources = await $api.get('sources/extra_sources/')
+            setSources([...results.results, ...extraSources.data.filter(extraSource => !results.results.some(resSource => (extraSource.title === resSource.title ? true : false)))])
             setReload(false);
         })()
     }, [reload])
@@ -176,7 +188,7 @@ const EditProject = observer(() => {
                 <Typography id="basic-modal-dialog-description" level="body-lg" color="neutral" textAlign='center'>
                     Выберите источники
                 </Typography>
-                <Stack spacing={2}>
+                <Stack spacing={2} sx={{maxWidth: 350}}>
                     <Divider>Выбрать источник</Divider>
                     <Autocomplete multiple options={sources}
                         getOptionLabel={option => option.title}
@@ -184,7 +196,7 @@ const EditProject = observer(() => {
                         onChange={(_, newValue) => setUsingSources(newValue)}
                         inputValue={inputValue}
                         onInputChange={(_, newValue) => setInputValue(newValue)}
-                        isOptionEqualToValue={(o, v) => o.id === v.id}
+                        isOptionEqualToValue={(o, v) => o.id === v.id && o.title === v.title}
                     />
                     <Button onClick={() => {
                         setInputValue(''); setOpenAddDialog(false)
@@ -401,7 +413,7 @@ const EditProject = observer(() => {
                     >
                         <ListItemButton>Добавить источники</ListItemButton>
                     </ListItem>
-                    {usingSources.map((element, index) => (<ListItem key={element.id}
+                    {usingSources.map((element, index) => (<ListItem key={element?.id + element.title}
                         endAction={
                             <ButtonGroup onClick={() => deleteSourceElement(index)}>
                                 <IconButton>

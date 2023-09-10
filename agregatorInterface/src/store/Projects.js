@@ -20,7 +20,7 @@ class Projects {
             this.state = 'pending'
             $api.get(`projects/?page=${this.page}`).then(
                 action('fetchProjectsSuccess', response => {
-                    this.projects = this.projects.concat(response.data.results);
+                    this.projects = this.projects.concat(response.data.results.filter(responseData => !this.projects.some(thisData => (thisData.id === responseData.id ? true : false))));
                     this.count = response.data.count;
                     this.page++;
                     this.state = 'done';
@@ -30,6 +30,11 @@ class Projects {
                 })
             )
         }
+    }
+
+    appendProject(project) {
+        this.projects.push(project)
+        this.count++;
     }
 
     deleteProjectById(id) {
@@ -42,7 +47,7 @@ class Projects {
             this.projects = this.projects.slice(0, -1)
         }
         else {
-            this.projects = [...this.projects.slice(0, position), ...this.projects.slice(position+1, this.projects.length)]
+            this.projects = [...this.projects.slice(0, position), ...this.projects.slice(position + 1, this.projects.length)]
         }
         $api.delete(`projects/${id}/`);
     }
@@ -54,7 +59,7 @@ class Projects {
         $api.patch(`promts/${this.projects[position].current_promt}/`, { description: promtDescription, promt_text: promtText })
         $api.put(`projects/${id}/`, newContent).then(action('updateProject', response => {
             this.projects[position] = response.data
-            if (this.projects[position].update_time != prev_time_value){
+            if (this.projects[position].update_time != prev_time_value) {
                 console.log(this.projects[position].update_time, prev_time_value)
                 $api.get(`projects/${this.projects[position].id}/generate_posts`)
             }
@@ -94,11 +99,11 @@ class Projects {
         $api.put(`projects/${id}/`, this.projects[position])
     }
 
-    createPromt(id, content){
+    createPromt(id, content) {
         const position = this.projects.findIndex(e => e.id === id);
         $api.post('promts/', content).then(
             action('createPromt', response => {
-                $api.put(`projects/${id}/`, {...this.projects[position], current_promt: response.data.id}).then(
+                $api.put(`projects/${id}/`, { ...this.projects[position], current_promt: response.data.id }).then(
                     action('updatePromt', response => {
                         this.projects[position] = response.data
                     })

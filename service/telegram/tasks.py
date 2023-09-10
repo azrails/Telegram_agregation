@@ -21,6 +21,7 @@ from django.utils.timezone import make_aware
 import sys
 import json
 from django.core.serializers.json import DjangoJSONEncoder
+import asyncio
 
 sys.setrecursionlimit(10000)
 
@@ -77,7 +78,9 @@ def create_comment(source_id, post_id, comment_id, comment_text, user_object):
 
 def parse_telegram_chanel(source_id, channel_url: str, offset_date: datetime):
     client = TelegramClient('anon', api_id, api_hash)
-    async def task():
+    async def task(channel_url):
+        if channel_url.isnumeric() or channel_url[1:].isnumeric():
+            channel_url = int(channel_url)
         async for message in client.iter_messages(channel_url, offset_date=offset_date, reverse=True):
             post_text = str(message.text)
             date=message.date
@@ -94,8 +97,7 @@ def parse_telegram_chanel(source_id, channel_url: str, offset_date: datetime):
                 else:
                     await create_post(source_id, post_id, date, post_text, user_object)
     with client:
-        client.loop.run_until_complete(task())
-        # print('finish parse')
+        client.loop.run_until_complete(task(channel_url))
     return f'chanel: {channel_url} updated'
 
 @app.task
@@ -278,3 +280,40 @@ def regenerate_post(long_type, date, project_id, promt_id):
         instance = GptPosts.objects.create(summary=' '.join(responces_text), project_id=project, promt_id=current_promt, date=current_date, 
                                            long_type=datetime.time(1,0) if long_type == 1 else datetime.time(0,0))
     return instance
+
+
+@shared_task()
+def get_all_sources():
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+    client = TelegramClient('anon', api_id, api_hash, loop=loop)
+    external_sources = []
+    async def get_external_sources():
+        all_dialogs = await client.get_dialogs()
+        for dialog in all_dialogs:
+            if hasattr(dialog.entity, 'title') or (hasattr(dialog.entity, 'username') and dialog.entity.username is not None):
+                external_sources.append({'title': (dialog.entity.title if hasattr(dialog.entity, 'title') else dialog.entity.username if hasattr(dialog.entity, 'username') else 'Unknown'), 'url': str(dialog.entity.id)})
+    with client:
+        client.loop.run_until_complete(get_external_sources())
+    return external_sources
+
+@shared_task()
+def get_gpt_question(question):
+    chunks = []
+    tokens = question.split(' ')
+    i = 0
+    prev = 0
+    sum_tokens = 0
+    while i < len(tokens):
+        print(chunks)
+        count_tokens = num_tokens_from_string(tokens[i], GPT_MODEL)
+        if sum_tokens + count_tokens <= MAX_TOKENS:
+            i+=1
+            sum_tokens+=count_tokens
+        else:
+            chunks.append(get_gpt_response('', ' '.join(tokens[prev: i])))
+            sum_tokens = 0
+            prev = i
+    chunks.append(get_gpt_response('', ' '.join(tokens[prev: i])))
+    return ' '.join(chunks)
+    

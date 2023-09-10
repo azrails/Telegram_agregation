@@ -7,7 +7,8 @@ from rest_framework.response import Response
 from telegram.tasks import create_project_update_data
 from rest_framework import status
 import datetime
-from telegram.tasks import regenerate_post
+from telegram.tasks import regenerate_post, get_all_sources, get_gpt_question
+from rest_framework.views import APIView
 # Create your views here.
 
 class ProjectsViewSet(viewsets.ModelViewSet):
@@ -23,6 +24,11 @@ class ProjectsViewSet(viewsets.ModelViewSet):
 class SourcesViewSet(viewsets.ModelViewSet):
     queryset = Sources.objects.all()
     serializer_class = SourcesSerializer
+
+    @action(detail=False, methods=['get'])
+    def extra_sources(self, request):
+        data = get_all_sources()
+        return Response(data)
 
 class PromtsViewSet(viewsets.ModelViewSet):
     queryset = Promts.objects.all()
@@ -46,11 +52,15 @@ class GptPostsViewSet(viewsets.ModelViewSet):
     @action(detail=False, methods=['get'], url_path=r'project_posts/(?P<pk>[0-9]+)')
     def project_posts(self, request, pk=None):
         gpt_posts = GptPosts.objects.filter(project_id=pk)
-
         page = self.paginate_queryset(gpt_posts)
         if page is not None:
             serializer = self.get_serializer(page, many=True)
             return self.get_paginated_response(serializer.data)
-
         serializer = self.get_serializer(gpt_posts, many=True)
         return Response(serializer.data)
+
+class GptChatApiView(APIView):
+    def post(self, request):
+        question = request.data.pop('value')
+        answer = get_gpt_question(question)
+        return Response({'value': answer})

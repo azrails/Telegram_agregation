@@ -12,6 +12,7 @@ import CreateProject from './components/pages/CreateProject/CreateProject.jsx';
 import EditProject from './components/pages/EditProject/EditProject.jsx';
 import SourcesPage from './components/pages/SourcesPage/SourcesPage.jsx';
 import EditSource from './components/pages/EditSource/EditSource.jsx';
+import GptChat from './components/pages/GptChat/GptChat.jsx';
 
 
 const router = createBrowserRouter([{
@@ -26,6 +27,7 @@ const router = createBrowserRouter([{
     {path: "projects/edit/:projectId", element: <EditProject/>},
     {path: 'sources', element: <SourcesPage/>},
     {path: 'sources/edit/:sourceId', element: <EditSource />},
+    {path: 'chat', element: <GptChat />},
     { index: true, element: <ProjectsPage /> },
   ]
 }])

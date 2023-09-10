@@ -86,11 +86,22 @@ export default function CreateProject() {
     }
 
     const createNewProject = async () => {
+        const validSources = []
+        for (let source of usingSources){
+            if (source.hasOwnProperty('id')){
+                validSources.push(source)
+            }
+            else{
+                const response = await $api.post(`sources/`, source)
+                console.log(response.data)
+                validSources.push(response.data)
+            }
+        }
         Projects.createProject({
             title: projectTitle,
             description: projectDescription,
             update_time: time,
-            sourses: usingSources,
+            sourses: validSources,
             promtDescription: promtTitle,
             promtText: projectPromt
         })
@@ -116,7 +127,8 @@ export default function CreateProject() {
     useEffect(() => {
         (async () => {
             const results = (await $api.get('sources/')).data
-            setSources(results.results)
+            const extraSources = await $api.get('sources/extra_sources/')
+            setSources([...results.results, ...extraSources.data.filter(extraSource => !results.results.some(resSource => (extraSource.title === resSource.title ? true : false)))])
             setReload(false);
         })()
     }, [reload])
@@ -134,10 +146,10 @@ export default function CreateProject() {
                 <Typography id="basic-modal-dialog-description" level="body-lg" color="neutral" textAlign='center'>
                     Выберите источники
                 </Typography>
-                <Stack spacing={2}>
+                <Stack spacing={2} sx={{maxWidth: 350}}>
                     <Divider>Выбрать источник</Divider>
                     <Autocomplete multiple options={sources}
-                        isOptionEqualToValue={(option, value) => option.title === value.title}
+                        isOptionEqualToValue={(option, value) => option.title === value.title && option.url === value.url}
                         getOptionLabel={option => option.title}
                         value={usingSources}
                         onChange={(_, newValue) => setUsingSources(newValue)}
@@ -145,7 +157,7 @@ export default function CreateProject() {
                         onInputChange={(_, newValue) => setInputValue(newValue)}
                     />
                     <Button onClick={() => {
-                        setInputValue(''); setOpenAddDialog(false)
+                        setInputValue(''); setOpenAddDialog(false);
                     }}>Сохранить</Button>
                 </Stack>
             </ModalDialog>
@@ -312,7 +324,7 @@ export default function CreateProject() {
                     >
                         <ListItemButton>Добавить источники</ListItemButton>
                     </ListItem>
-                    {usingSources.map((element, index) => (<ListItem key={element.id}
+                    {usingSources.map((element, index) => (<ListItem key={element?.id + element.title + element.url}
                         endAction={
                             <ButtonGroup onClick={() => deleteSourceElement(index)}>
                                 <IconButton>
