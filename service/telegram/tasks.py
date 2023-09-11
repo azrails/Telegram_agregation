@@ -231,7 +231,7 @@ def get_gpt_posts_hour():
             posts = get_posts_dict(project, prev_hour_date, current_time)
             if len(posts) != 0:
                 responces_text = get_responces_from_gpt(current_promt, posts)
-                message = Message(content=' '.join(responces_text), title=f'{project.title} ({get_msk_time(current_time)} - {get_msk_time(prev_hour_date)})', level=Message.LEVEL_VERBOSE)
+                message = Message(content=f'<b>{project.title}</b><br><i>({get_msk_time(current_time)} - {get_msk_time(prev_hour_date)})</i><br><br>' + ' '.join(responces_text), title=f'{project.title} ({get_msk_time(current_time)} - {get_msk_time(prev_hour_date)})', level=Message.LEVEL_VERBOSE)
                 message.send(NOTIFY_TOKEN)
                 GptPosts.objects.create(summary=' '.join(responces_text), project_id=project, promt_id=current_promt)
     return posts
@@ -248,7 +248,7 @@ def get_gpt_posts_day():
             posts = get_posts_dict(project, prev_hour_date, current_time)
             if len(posts) != 0:
                 responces_text = get_responces_from_gpt(current_promt, posts)
-                message = Message(content=' '.join(responces_text), title=f'{project.title} ({get_msk_time(current_time)} - {get_msk_time(prev_hour_date)})', level=Message.LEVEL_VERBOSE)
+                message = Message(content=f'<b>{project.title}</b><br><i>({get_msk_time(current_time)} - {get_msk_time(prev_hour_date)})</i><br><br>' + ' '.join(responces_text), title=f'{project.title} ({get_msk_time(current_time)} - {get_msk_time(prev_hour_date)})', level=Message.LEVEL_VERBOSE)
                 message.send(NOTIFY_TOKEN)
                 GptPosts.objects.create(summary=' '.join(responces_text), project_id=project, promt_id=current_promt, long_type=datetime.time(0,0))
     return posts
@@ -272,7 +272,7 @@ def create_project_update_data(project_id):
     if len(posts) != 0:
         responces_text = get_responces_from_gpt(current_promt, posts)
         #for notify
-        message = Message(content=' '.join(responces_text), title=f'{project.title} ({get_msk_time(current_date)} - {get_msk_time(prev_hour_date)})', level=Message.LEVEL_VERBOSE)
+        message = Message(content=f'<b>{project.title}</b><br><i>({get_msk_time(current_date)} - {get_msk_time(prev_hour_date)})</i><br><br>' + ' '.join(responces_text), title=f'{project.title} ({get_msk_time(current_date)} - {get_msk_time(prev_hour_date)})', level=Message.LEVEL_VERBOSE)
         message.send(NOTIFY_TOKEN)
 
         #create gpt_post
@@ -295,7 +295,7 @@ def regenerate_post(long_type, date, project_id, promt_id):
     instance = None
     if len(posts) != 0:
         responces_text = get_responces_from_gpt(current_promt, posts)
-        message = Message(content=' '.join(responces_text), title=f'{project.title} ({get_msk_time(current_date)} - {get_msk_time(prev_date)})', level=Message.LEVEL_VERBOSE)
+        message = Message(content=f'<b>{project.title}</b><br><i>({get_msk_time(current_date)} - {get_msk_time(prev_date)})</i><br><br>' + ' '.join(responces_text), title=f'{project.title} ({get_msk_time(current_date)} - {get_msk_time(prev_date)})', level=Message.LEVEL_VERBOSE)
         message.send(NOTIFY_TOKEN)
         instance = GptPosts.objects.create(summary=' '.join(responces_text), project_id=project, promt_id=current_promt, date=current_date, 
                                            long_type=datetime.time(1,0) if long_type == 1 else datetime.time(0,0))
