@@ -36,7 +36,7 @@ MAX_TOKENS = 10000
 NOTIFY_TOKEN='cjc5oad_h4jqmn6eb2-7tmg7j8r7ly4o'
 
 def get_msk_time(time: datetime):
-    fmt = "%Y-%m-%d %H:%M"
+    fmt = "%d-%m-%Y %H:%M"
     msk_timezone = pytz.timezone('Europe/Moscow')
     time.replace(tzinfo=msk_timezone)
     return time.strftime(fmt)
