@@ -17,7 +17,7 @@ export default function GptChat() {
     }
 
     return <Box sx={{
-        width: '96vw', height: '100vh', px: { xs: 2, md: 4 },
+        width: '96vw', height: '100%', px: { xs: 2, md: 4 },
         pt: { xs: 8, md: 4 },
         pb: { xs: 2, md: 2 }
     }}>
