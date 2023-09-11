@@ -14,3 +14,4 @@ djangorestframework
 django-cors-headers
 openai
 tiktoken
+notify_events

@@ -22,6 +22,8 @@ import sys
 import json
 from django.core.serializers.json import DjangoJSONEncoder
 import asyncio
+from notify_events import Message
+import pytz
 
 sys.setrecursionlimit(10000)
 
@@ -31,6 +33,13 @@ session='anon'
 openai.api_key = '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'
 GPT_MODEL='gpt-3.5-turbo-16k'
 MAX_TOKENS = 10000
+NOTIFY_TOKEN='cjc5oad_h4jqmn6eb2-7tmg7j8r7ly4o'
+
+def get_msk_time(time: datetime):
+    fmt = "%Y-%m-%d %H:%M"
+    msk_timezone = pytz.timezone('Europe/Moscow')
+    time.replace(tzinfo=msk_timezone)
+    return time.strftime(fmt)
 
 def num_tokens_from_string(string: str, encoding_name: str) -> int:
     """Returns the number of tokens in a text string."""
@@ -222,6 +231,8 @@ def get_gpt_posts_hour():
             posts = get_posts_dict(project, prev_hour_date, current_time)
             if len(posts) != 0:
                 responces_text = get_responces_from_gpt(current_promt, posts)
+                message = Message(content=' '.join(responces_text), title=f'{project.title} ({get_msk_time(current_time)} - {get_msk_time(prev_hour_date)})', level=Message.LEVEL_VERBOSE)
+                message.send(NOTIFY_TOKEN)
                 GptPosts.objects.create(summary=' '.join(responces_text), project_id=project, promt_id=current_promt)
     return posts
 
@@ -237,6 +248,8 @@ def get_gpt_posts_day():
             posts = get_posts_dict(project, prev_hour_date, current_time)
             if len(posts) != 0:
                 responces_text = get_responces_from_gpt(current_promt, posts)
+                message = Message(content=' '.join(responces_text), title=f'{project.title} ({get_msk_time(current_time)} - {get_msk_time(prev_hour_date)})', level=Message.LEVEL_VERBOSE)
+                message.send(NOTIFY_TOKEN)
                 GptPosts.objects.create(summary=' '.join(responces_text), project_id=project, promt_id=current_promt, long_type=datetime.time(0,0))
     return posts
 
@@ -258,6 +271,11 @@ def create_project_update_data(project_id):
 
     if len(posts) != 0:
         responces_text = get_responces_from_gpt(current_promt, posts)
+        #for notify
+        message = Message(content=' '.join(responces_text), title=f'{project.title} ({get_msk_time(current_date)} - {get_msk_time(prev_hour_date)})', level=Message.LEVEL_VERBOSE)
+        message.send(NOTIFY_TOKEN)
+
+        #create gpt_post
         GptPosts.objects.create(summary=' '.join(responces_text), project_id=project, promt_id=current_promt, long_type=project.update_time)
     return json.dumps(
         {'posts': posts, 'project_time': str(project.update_time), 'date_timestamp': str(date_timestamp)},
@@ -277,6 +295,8 @@ def regenerate_post(long_type, date, project_id, promt_id):
     instance = None
     if len(posts) != 0:
         responces_text = get_responces_from_gpt(current_promt, posts)
+        message = Message(content=' '.join(responces_text), title=f'{project.title} ({get_msk_time(current_date)} - {get_msk_time(prev_date)})', level=Message.LEVEL_VERBOSE)
+        message.send(NOTIFY_TOKEN)
         instance = GptPosts.objects.create(summary=' '.join(responces_text), project_id=project, promt_id=current_promt, date=current_date, 
                                            long_type=datetime.time(1,0) if long_type == 1 else datetime.time(0,0))
     return instance
