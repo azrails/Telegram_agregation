@@ -406,7 +406,7 @@ const EditProject = observer(() => {
                 <Button variant="outlined" size="lg" color="neutral" sx={{ width: '100%' }} onClick={() => { setOpen(true) }}>Создать новый источник</Button>
                 <List sx={{ maxWidth: { md: 500 } }}>
                     <ListItem
-                        onClick={() => { setOpenAddDialog(true) }}
+                        onClick={() => { setOpenAddDialog(true); setReload(true) }}
                         startAction={
                             <Add />
                         }

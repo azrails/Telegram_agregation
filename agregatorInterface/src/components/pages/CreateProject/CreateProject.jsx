@@ -87,6 +87,7 @@ export default function CreateProject() {
 
     const createNewProject = async () => {
         const validSources = []
+        console.log(usingSources)
         for (let source of usingSources){
             if (source.hasOwnProperty('id')){
                 validSources.push(source)
@@ -317,7 +318,7 @@ export default function CreateProject() {
                 <Button variant="outlined" size="lg" color="neutral" sx={{ width: '100%' }} onClick={() => { setOpen(true) }}>Создать новый источник</Button>
                 <List sx={{ maxWidth: { md: 500 } }}>
                     <ListItem
-                        onClick={() => { setOpenAddDialog(true) }}
+                        onClick={() => { setOpenAddDialog(true); setReload(true) }}
                         startAction={
                             <Add />
                         }
