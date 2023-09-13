@@ -29,6 +29,11 @@ class SourcesViewSet(viewsets.ModelViewSet):
     def extra_sources(self, request):
         data = get_all_sources()
         return Response(data)
+    @action(detail=False, methods=['get'])
+    def all_sources(self, request):
+        data = Sources.objects.all()
+        serializer = self.get_serializer(data=data, many=True)
+        return Response(serializer.data)
 
 class PromtsViewSet(viewsets.ModelViewSet):
     queryset = Promts.objects.all()

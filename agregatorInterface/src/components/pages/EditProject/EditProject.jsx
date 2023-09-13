@@ -142,9 +142,17 @@ const EditProject = observer(() => {
 
     useEffect(() => {
         (async () => {
-            const results = (await $api.get('sources/')).data
+            const results = []
+            let response = (await $api.get('sources/?page=1')).data
+            results.push(...response.results)
+            let i = 2;
+            while (response.next){
+                response = (await $api.get(`sources/?page=${i}`)).data
+                i++;
+                results.push(...response.results)
+            }
             const extraSources = await $api.get('sources/extra_sources/')
-            setSources([...results.results, ...extraSources.data.filter(extraSource => !results.results.some(resSource => (extraSource.title === resSource.title ? true : false)))])
+            setSources([...results, ...extraSources.data.filter(extraSource => !results.some(resSource => (extraSource.title === resSource.title ? true : false)))])
             setReload(false);
         })()
     }, [reload])
