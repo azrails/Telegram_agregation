@@ -23,7 +23,6 @@ import json
 from django.core.serializers.json import DjangoJSONEncoder
 import asyncio
 from notify_events import Message
-import pytz
 
 sys.setrecursionlimit(10000)
 
@@ -37,9 +36,8 @@ NOTIFY_TOKEN='cjc5oad_h4jqmn6eb2-7tmg7j8r7ly4o'
 
 def get_msk_time(time: datetime):
     fmt = "%d-%m-%Y %H:%M"
-    msk_timezone = pytz.timezone('Europe/Moscow')
-    time.replace(tzinfo=msk_timezone)
-    return time.strftime(fmt)
+    timedelta = datetime.timedelta(hours=3)
+    return (time + timedelta).strftime(fmt)
 
 def num_tokens_from_string(string: str, encoding_name: str) -> int:
     """Returns the number of tokens in a text string."""
@@ -253,13 +251,32 @@ def get_gpt_posts_day():
                 GptPosts.objects.create(summary=' '.join(responces_text), project_id=project, promt_id=current_promt, long_type=datetime.time(0,0))
     return posts
 
+@app.task
+def get_gpt_posts_week():
+    current_time = datetime.datetime.now(datetime.timezone.utc)
+    prev_hour_date = current_time - datetime.timedelta(weeks=1)
+    projects = Projects.objects.all()
+    posts = []
+    for project in projects:
+        if project.update_time == datetime.time(2, 0):
+            current_promt = Promts.objects.get(id=project.current_promt)
+            posts = get_posts_dict(project, prev_hour_date, current_time)
+            if len(posts) != 0:
+                responces_text = get_responces_from_gpt(current_promt, posts)
+                message = Message(content=f'<b>{project.title}</b><br><i>({get_msk_time(current_time)} - {get_msk_time(prev_hour_date)})</i><br><br>' + ' '.join(responces_text), title=f'{project.title} ({get_msk_time(current_time)} - {get_msk_time(prev_hour_date)})', level=Message.LEVEL_VERBOSE)
+                message.send(NOTIFY_TOKEN)
+                GptPosts.objects.create(summary=' '.join(responces_text), project_id=project, promt_id=current_promt, long_type=datetime.time(2,0))
+    return posts
+
 
 @shared_task()
 def create_project_update_data(project_id):
     project = Projects.objects.get(id=project_id)
     current_date = datetime.datetime.now(datetime.timezone.utc)
     if project.update_time == datetime.time(1, 0):
-        date_timestamp = datetime.timedelta(hours=1) 
+        date_timestamp = datetime.timedelta(hours=1)
+    elif project.update_time == datetime.time(2, 0):
+        date_timestamp = datetime.timedelta(weeks=1)
     else:
         date_timestamp = datetime.timedelta(hours=24)
     prev_hour_date = current_date - date_timestamp
@@ -289,7 +306,7 @@ def create_project_update_data(project_id):
 def regenerate_post(long_type, date, project_id, promt_id):
     project = Projects.objects.get(id=project_id)
     current_date = make_aware(date)
-    prev_date = current_date - datetime.timedelta(hours=1) if long_type == 1 else current_date - datetime.timedelta(days=1)
+    prev_date = current_date - datetime.timedelta(hours=1) if long_type == 1 else current_date - datetime.timedelta(weeks=1) if long_type == 2 else current_date - datetime.timedelta(days=1)
     current_promt = Promts.objects.get(id=promt_id)
     posts = get_posts_dict(project, prev_date, current_date)
     instance = None
@@ -298,7 +315,7 @@ def regenerate_post(long_type, date, project_id, promt_id):
         message = Message(content=f'<b>{project.title}</b><br><i>({get_msk_time(current_date)} - {get_msk_time(prev_date)})</i><br><br>' + ' '.join(responces_text), title=f'{project.title} ({get_msk_time(current_date)} - {get_msk_time(prev_date)})', level=Message.LEVEL_VERBOSE)
         message.send(NOTIFY_TOKEN)
         instance = GptPosts.objects.create(summary=' '.join(responces_text), project_id=project, promt_id=current_promt, date=current_date, 
-                                           long_type=datetime.time(1,0) if long_type == 1 else datetime.time(0,0))
+                                           long_type=datetime.time(1,0) if long_type == 1 else datetime.time(2, 0) if long_type == 2 else datetime.time(0,0))
     return instance
 
 

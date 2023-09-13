@@ -52,7 +52,7 @@ function HeaderSection() {
     </Stack>
 }
 
-const times = { '01:00:00': 'Час', '00:00:00': 'День' }
+const times = { '01:00:00': 'Час', '00:00:00': 'День', '02:00:00': 'Неделя' }
 const source_types = { 'telegram': 'Telegram' }
 
 const EditProject = observer(() => {
@@ -296,7 +296,7 @@ const EditProject = observer(() => {
                             onChange={e => setProjectDescription(e.target.value)}
                         />
                     </Box>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, justifyContent: 'space-between' }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, justifyContent: 'space-between', flexWrap: 'wrap'}}>
                         <Typography level="h4" color="neutral">
                             Периодичность обновлений:
                         </Typography>
@@ -315,7 +315,7 @@ const EditProject = observer(() => {
                                 '--Radio-actionRadius': '8px',
                             }}
                         >
-                            {['01:00:00', '00:00:00'].map(item => (
+                            {['01:00:00', '00:00:00', '02:00:00'].map(item => (
                                 <Radio
                                     key={item}
                                     color="neutral"
