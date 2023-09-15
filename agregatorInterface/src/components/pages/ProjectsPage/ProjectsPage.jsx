@@ -34,7 +34,7 @@ const ProjectsPage = observer(() => {
         }
     },[Projects.projects])
 
-    return <Grid container sx={{ m: 0, width: { xs: '100vw', md: '96vw' }, height: '100%' }}>
+    return <Grid container sx={{ m: 0, width: { xs: '100vw', md: '94vw' }, height: '100%' }}>
         <Grid xs={12} sx={{
             h: '100%', px: { xs: 2, md: 4 },
             pt: { xs: 8, md: 4 },

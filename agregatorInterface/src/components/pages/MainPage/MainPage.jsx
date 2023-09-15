@@ -29,7 +29,7 @@ export default function MainPage() {
             display: "flex",
             minHeight: "100dvh",
             height: '100%',
-            minHeight: '100vh'
+            minHeight: '100vh',
         }}
     >
         <GlobalStyles styles={(theme) => ({
