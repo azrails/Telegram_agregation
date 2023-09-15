@@ -62,7 +62,7 @@ function PostCard({ id, date, summary, handleDeletePost, longType, setOpen, setE
                     {`${trueDate.toLocaleString()} - ${endDate.toLocaleString()}`}
                 </Typography>
             </Stack>
-            <Typography color="neutral" level="body-sm" variant="plain">
+            <Typography color="neutral" level="body-sm" variant="plain" component='div'>
                 {<div dangerouslySetInnerHTML={{ __html:prepareSummary(summary)}}></div>}
             </Typography>
         </Stack>

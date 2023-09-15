@@ -22,10 +22,10 @@ export default function GptChat() {
         pb: { xs: 2, md: 2 }
     }}>
         <Stack sx={{
-            width: '100%', height: '100%'
+            width: '100%', height: {xs: '90vh', md: '95vh'}
         }} alignItems='center' justifyContent='space-between' direction='column'>
-            <Box sx={{ width: '100%', height: '80%', overflowY: 'scroll', overflowX: 'hidden' }}>
-                <Typography color="neutral" level="body-sm" variant="plain">{prepareSummary(gptResponse)}</Typography>
+            <Box sx={{ width: '100%', maxHeight: '80%', overflowY: 'auto', overflowX: 'hidden' }}>
+                <Typography color="neutral" level="body-sm" variant="plain" component='div'>{<div dangerouslySetInnerHTML={{ __html:prepareSummary(gptResponse)}}></div>}</Typography>
             </Box>
             <Textarea minRows={2} maxRows={8} sx={{ maxWidth: 600, width: '100%', zIndex: 100 }}
                 value={inputValue}
