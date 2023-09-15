@@ -129,7 +129,8 @@ def get_gpt_response(promt_text: str, posts_text) -> str:
             {"role": "user", "content": f'{posts_text}'},
         ]
     )
-    return response['choices'][0]['message']['content']
+    message = response['choices'][0]['message']['content']
+    return message.replace("\n", "<br>")
 
 def comments_tree(comm_id):
     comm_level = Comments.objects.filter(id__icontains=f'@{comm_id}@')

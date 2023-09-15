@@ -63,7 +63,7 @@ function PostCard({ id, date, summary, handleDeletePost, longType, setOpen, setE
                 </Typography>
             </Stack>
             <Typography color="neutral" level="body-sm" variant="plain">
-                {prepareSummary(summary)}
+                {<div dangerouslySetInnerHTML={{ __html:prepareSummary(summary)}}></div>}
             </Typography>
         </Stack>
         <CardActions sx={{ mr: 2, my: 2 }}>
