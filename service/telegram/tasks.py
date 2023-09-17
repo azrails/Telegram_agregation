@@ -194,28 +194,29 @@ def get_responces_from_gpt(current_promt, posts):
     promt_tokens = num_tokens_from_string(current_promt.promt_text, GPT_MODEL)
     while len(posts) > 0:
         count_tokens = promt_tokens
-        message_tokens = []
+        message_tokens = {}
         for key, value in posts.copy().items():
             tmp_count_tokens = num_tokens_from_string(f'[{key}]:' , GPT_MODEL)
             if tmp_count_tokens + count_tokens <= MAX_TOKENS:
                 count_tokens += tmp_count_tokens
-                message_tokens.append(f'[{key}]:')
+                message_tokens[f'[{key}]:'] = []
                 i = 0
                 while i < len(value):
                     tmp_count_tokens = num_tokens_from_string(value[i], GPT_MODEL)
                     if count_tokens + tmp_count_tokens > MAX_TOKENS:
+                        message_tokens[f'[{key}]:'] = value[:i+1]
                         posts[key] = value[i:]
                         break
                     count_tokens += tmp_count_tokens
-                    message_tokens.append(value[i])
                     i+=1
                 if i == len(value):
+                    message_tokens[f'[{key}]:'] = value
                     posts.pop(key, None)
             else:
                 break
             if count_tokens > MAX_TOKENS:
                 break
-        responces_text.append(get_gpt_response(current_promt.promt_text, ' '.join(message_tokens)))
+        responces_text.append(get_gpt_response(current_promt.promt_text, json.dumps(message_tokens, ensure_ascii=False, indent=2)))
     return responces_text
 
 @app.task
