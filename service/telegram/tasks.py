@@ -127,7 +127,9 @@ def get_gpt_response(promt_text: str, posts_text) -> str:
         messages = [
             {"role": "system", "content": f'{promt_text}'},
             {"role": "user", "content": f'{posts_text}'},
-        ]
+        ],
+        top_p=0.2,
+        temperature=0.2
     )
     message = response['choices'][0]['message']['content']
     return message.replace("\n", "<br>")
