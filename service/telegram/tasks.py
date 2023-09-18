@@ -23,6 +23,7 @@ import json
 from django.core.serializers.json import DjangoJSONEncoder
 import asyncio
 from notify_events import Message
+import time
 
 sys.setrecursionlimit(10000)
 
@@ -219,6 +220,7 @@ def get_responces_from_gpt(current_promt, posts):
             if count_tokens > MAX_TOKENS:
                 break
         responces_text.append(get_gpt_response(current_promt.promt_text, json.dumps(message_tokens, ensure_ascii=False, indent=2)))
+        time.sleep(5)
     return responces_text
 
 @app.task
