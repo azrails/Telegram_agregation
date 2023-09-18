@@ -220,7 +220,6 @@ def get_responces_from_gpt(current_promt, posts):
             if count_tokens > MAX_TOKENS:
                 break
         responces_text.append(get_gpt_response(current_promt.promt_text, json.dumps(message_tokens, ensure_ascii=False, indent=2)))
-        time.sleep(5)
     return responces_text
 
 @app.task

@@ -36,7 +36,7 @@ export const prepareSummary = (summary) => {
     const newSummary = []
     const regex = /((?:https?:\/\/|ftps?:\/\/|\bwww\.)(?:(?![.,?!;:()]*(?:\s|$))[^\s]){2,})|(\n+|(?:(?!(?:https?:\/\/|ftp:\/\/|\bwww\.)(?:(?![.,?!;:()]*(?:\s|$))[^\s]){2,}).)+)/gim;
     summary.replace(regex, (m, link, text, salt) => {
-        newSummary.push(link ? <Link to={link} key={link + text + salt}>{link}</Link> : text);
+        newSummary.push(link ? `<a href=${link}>${link}</a>` : text);
     })
     return newSummary
 }
