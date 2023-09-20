@@ -33,12 +33,11 @@ const dateOffset = {
 
 
 export const prepareSummary = (summary) => {
-    const newSummary = []
-    const regex = /((?:https?:\/\/|ftps?:\/\/|\bwww\.)(?:(?![.,?!;:()]*(?:\s|$))[^\s]){2,})|(\n+|(?:(?!(?:https?:\/\/|ftp:\/\/|\bwww\.)(?:(?![.,?!;:()]*(?:\s|$))[^\s]){2,}).)+)/gim;
-    summary.replace(regex, (m, link, text, salt) => {
-        newSummary.push(link ? `<a href=${link}>${link}</a>` : text);
+   const regex = /((([A-Za-z]{3,9}:(?:\/\/)?)(?:[-;:&=\+\$,\w]+@)?[A-Za-z0-9.-]+|(?:www.|[-;:&=\+\$,\w]+@)[A-Za-z0-9.-]+)((?:\/[\+~%\/.\w-_]*)?\??(?:[-\+=&;%@.\w_]*)#?(?:[\w]*))?)/g;
+	const replaced = summary.replace(regex, (link) => {
+                return `<a href=${link}>${link}</a>`
     })
-    return newSummary
+    return replaced
 }
 
 function PostCard({ id, date, summary, handleDeletePost, longType, setOpen, setEditPromtId, promtId, setPostId }) {
