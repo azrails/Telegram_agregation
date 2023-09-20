@@ -58,7 +58,7 @@ function PostCard({ id, date, summary, handleDeletePost, longType, setOpen, setE
         <Stack sx={{ padding: { xs: 2, sm: 0 }, overflow: 'hidden' }} spacing={1} flex={1}>
             <Stack spacing={1} direction='row' justifyContent='space-between' alignItems='center'>
                 <Typography color="primary" fontSize='sm' fontWeight='lg'>
-                    {`${trueDate.toLocaleString(("en-US", {timeZone: "Europe/Moscow"}))} - ${endDate.toLocaleString(("en-US", {timeZone: "Europe/Moscow"}))}`}
+                    {`${trueDate.toString()} - ${endDate.toString()}`}
                 </Typography>
             </Stack>
             <Typography color="neutral" level="body-sm" variant="plain" component='div'>
