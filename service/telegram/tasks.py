@@ -166,6 +166,12 @@ def get_posts_dict(project, prev_hour_date, current_date) -> dict:
             source_dict["chat_name"] = source.title
             source_dict["messages"] = []
             for post in posts_l:
+                if  num_tokens_from_string(json.dumps(source_dict, ensure_ascii=False), GPT_MODEL) > MAX_TOKENS // 2:
+                    posts.append(source_dict)
+                    source_dict = {}
+                    source_dict["chat_id"] = source.url
+                    source_dict["chat_name"] = source.title
+                    source_dict["messages"] = []
                 user = 'аноним'
                 try:
                     user_object = post.user_id
@@ -303,8 +309,13 @@ def regenerate_post(long_type, date, project_id, promt_id):
         with open('results.json', 'w') as f:
             json.dump(posts, f, ensure_ascii=False, indent=2)
         responces_text = get_responces_from_gpt(current_promt, posts)
-        message = Message(content=f'<b>{project.title}</b><br><i>({get_msk_time(current_date)} - {get_msk_time(prev_date)})</i><br><br>' + ' '.join(responces_text), title=f'{project.title} ({get_msk_time(current_date)} - {get_msk_time(prev_date)})', level=Message.LEVEL_VERBOSE)
-        message.send(NOTIFY_TOKEN)
+        if len(responces_text) > 1:
+            for i, response_text in enumerate(responces_text):
+                message = Message(content=f'<b>{project.title}</b><br><i>({get_msk_time(current_date)} - {get_msk_time(prev_date)})</i><br>Часть {i + 1}<br><br>' + response_text, title=f'{project.title} ({get_msk_time(current_date)} - {get_msk_time(prev_date)})', level=Message.LEVEL_VERBOSE)
+                message.send(NOTIFY_TOKEN)
+        else:
+            message = Message(content=f'<b>{project.title}</b><br><i>({get_msk_time(current_date)} - {get_msk_time(prev_date)})</i><br><br>' + ' '.join(responces_text), title=f'{project.title} ({get_msk_time(current_date)} - {get_msk_time(prev_date)})', level=Message.LEVEL_VERBOSE)
+            message.send(NOTIFY_TOKEN)
         instance = GptPosts.objects.create(summary=' '.join(responces_text), project_id=project, promt_id=current_promt, date=current_date, 
                                            long_type=datetime.time(1,0) if long_type == 1 else datetime.time(2, 0) if long_type == 2 else datetime.time(0,0))
     return instance
