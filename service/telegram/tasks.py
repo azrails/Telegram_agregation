@@ -32,7 +32,7 @@ api_hash = '4d8880bc0cfa9c67838f03c21edcf3f7'
 session='anon'
 openai.api_key = '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'
 GPT_MODEL='gpt-4'
-MAX_TOKENS = 6000
+MAX_TOKENS = 4000
 NOTIFY_TOKEN='cjc5oad_h4jqmn6eb2-7tmg7j8r7ly4o'
 
 def get_msk_time(time: datetime):
@@ -129,7 +129,7 @@ def get_gpt_response(promt_text: str, posts_text) -> str:
             {"role": "system", "content": f'{promt_text}'},
             {"role": "user", "content": f'{posts_text}'},
         ],
-        top_p=0.2,
+        top_p=0.1,
         temperature=0.2
     )
     message = response['choices'][0]['message']['content']
@@ -148,21 +148,23 @@ def comments_tree(comm_id):
                     user = user_object.username
             except Exception as e:
                 print(e)
-            comments.append(f'[username:{user},message_id:{coment_id}]:')
-            comments.append(comm.comment_text)
+            comments.append({'message_id': coment_id, 'message_text': comm.comment_text ,'username': user})
             comments.extend(comments_tree(coment_id))
     return comments
     
 
 def get_posts_dict(project, prev_hour_date, current_date) -> dict:
-    posts = {}
+    posts = []
     #all posts in sources
     for source in project.sourses.all():
         # print('go gpt')
         posts_l = source.posts.filter(date__range=[prev_hour_date, current_date])
         # no reason create zero posts public key
         if len(posts_l) != 0:
-            posts[f'source_title:{source.title},source_url:{source.url}'] = []
+            source_dict = {}
+            source_dict["chat_id"] = source.url
+            source_dict["chat_name"] = source.title
+            source_dict["messages"] = []
             for post in posts_l:
                 user = 'аноним'
                 try:
@@ -172,11 +174,9 @@ def get_posts_dict(project, prev_hour_date, current_date) -> dict:
                 except Exception as e:
                     print(e)
                 #adding messages for source grouping
-                posts[f'source_title:{source.title},source_url:{source.url}'].append(f'[username:{user},message_id:{post.id.split("@")[1]}]:')
-                posts[f'source_title:{source.title},source_url:{source.url}'].append(post.post_text)
+                source_dict['messages'].append({'message_id': post.id.split("@")[1], 'message_text': post.post_text, 'username': user})
                 comments = Comments.objects.filter(id__icontains=f'@{post.id.split("@")[1]}@')
                 if len(comments) != 0:
-                    posts[f'source_title:{source.title},source_url:{source.url}'].append('[comments]:')
                     for comm in comments:
                         comm_id = comm.id.split('@')[2]
                         user = 'аноним'
@@ -186,40 +186,24 @@ def get_posts_dict(project, prev_hour_date, current_date) -> dict:
                                 user = user_object.username
                         except Exception as e:
                             print(e)
-                        posts[f'source_title:{source.title},source_url:{source.url}'].append(f'[username:{user},message_id:{comm_id}]:')
-                        posts[f'source_title:{source.title},source_url:{source.url}'].append(comm.comment_text)
-                        posts[f'source_title:{source.title},source_url:{source.url}'].extend(comments_tree(comm_id))
-
+                        source_dict["messages"].append({'message_id':comm_id, 'message_text': comm.comment_text, 'username':user,})
+                        source_dict["messages"].extend(comments_tree(comm_id))
+            posts.append(source_dict)
     return posts
 
 def get_responces_from_gpt(current_promt, posts):
     responces_text = []
     promt_tokens = num_tokens_from_string(current_promt.promt_text, GPT_MODEL)
-    while len(posts) > 0:
-        count_tokens = promt_tokens
-        message_tokens = {}
-        for key, value in posts.copy().items():
-            tmp_count_tokens = num_tokens_from_string(f'[{key}]:' , GPT_MODEL)
-            if tmp_count_tokens + count_tokens <= MAX_TOKENS:
-                count_tokens += tmp_count_tokens
-                message_tokens[f'[{key}]:'] = []
-                i = 0
-                while i < len(value):
-                    tmp_count_tokens = num_tokens_from_string(value[i], GPT_MODEL)
-                    if count_tokens + tmp_count_tokens > MAX_TOKENS:
-                        message_tokens[f'[{key}]:'] = value[:i+1]
-                        posts[key] = value[i:]
-                        break
-                    count_tokens += tmp_count_tokens
-                    i+=1
-                if i == len(value):
-                    message_tokens[f'[{key}]:'] = value
-                    posts.pop(key, None)
-            else:
-                break
-            if count_tokens > MAX_TOKENS:
-                break
-        responces_text.append(get_gpt_response(current_promt.promt_text, json.dumps(message_tokens, ensure_ascii=False, indent=2)))
+    i = 0
+    end = 0
+    count_tokens = promt_tokens
+    while i < len(posts):
+        count_tokens += num_tokens_from_string(json.dumps(posts[i], ensure_ascii=False), GPT_MODEL)
+        if count_tokens >= MAX_TOKENS or i == len(posts) - 1:
+            count_tokens = promt_tokens
+            responces_text.append(get_gpt_response(current_promt.promt_text, json.dumps(posts[end:i + 1], ensure_ascii=False)))
+            end = i + 1
+        i+=1
     return responces_text
 
 @app.task
@@ -316,6 +300,8 @@ def regenerate_post(long_type, date, project_id, promt_id):
     posts = get_posts_dict(project, prev_date, current_date)
     instance = None
     if len(posts) != 0:
+        with open('results.json', 'w') as f:
+            json.dump(posts, f, ensure_ascii=False, indent=2)
         responces_text = get_responces_from_gpt(current_promt, posts)
         message = Message(content=f'<b>{project.title}</b><br><i>({get_msk_time(current_date)} - {get_msk_time(prev_date)})</i><br><br>' + ' '.join(responces_text), title=f'{project.title} ({get_msk_time(current_date)} - {get_msk_time(prev_date)})', level=Message.LEVEL_VERBOSE)
         message.send(NOTIFY_TOKEN)
