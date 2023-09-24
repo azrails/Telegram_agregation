@@ -31,8 +31,8 @@ api_id = '21794783'
 api_hash = '4d8880bc0cfa9c67838f03c21edcf3f7'
 session='anon'
 openai.api_key = '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'
-GPT_MODEL='gpt-4'
-MAX_TOKENS = 4000
+GPT_MODEL='gpt-3.5-turbo-16k'
+MAX_TOKENS = 8000
 NOTIFY_TOKEN='cjc5oad_h4jqmn6eb2-7tmg7j8r7ly4o'
 
 def get_msk_time(time: datetime):

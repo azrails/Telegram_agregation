@@ -40,9 +40,10 @@ export const prepareSummary = (summary) => {
     return replaced
 }
 
-function PostCard({ id, date, summary, handleDeletePost, longType, setOpen, setEditPromtId, promtId, setPostId }) {
+function PostCard({ id, date, summary, handleDeletePost, longType, setOpen, setEditPromtId, promtId, setPostId, creationDate }) {
     const trueDate = new Date(date)
     const endDate = new Date(+trueDate - dateOffset[longType]);
+    const crDate = new Date(creationDate)
     return <Card variant="outlined"
         orientation="horizontal"
         sx={{
@@ -58,7 +59,7 @@ function PostCard({ id, date, summary, handleDeletePost, longType, setOpen, setE
         <Stack sx={{ padding: { xs: 2, sm: 0 }, overflow: 'hidden' }} spacing={1} flex={1}>
             <Stack spacing={1} direction='row' justifyContent='space-between' alignItems='center'>
                 <Typography color="primary" fontSize='sm' fontWeight='lg'>
-                    {`${trueDate.toLocaleString('en-GB', {timeZone: 'Europe/Moscow'})} - ${endDate.toLocaleString('en-GB', {timeZone: 'Europe/Moscow'})}`}
+                    {`${trueDate.toLocaleString('en-GB', {timeZone: 'Europe/Moscow'})} - ${endDate.toLocaleString('en-GB', {timeZone: 'Europe/Moscow'})}. Дата создания отчета: ${crDate.toLocaleString('en-GB', {timeZone: 'Europe/Moscow'})}`}
                 </Typography>
             </Stack>
             <Typography color="neutral" level="body-sm" variant="plain" component='div'>
@@ -277,6 +278,7 @@ const ProjectPage = observer(() => {
                             promtId={post.promt_id}
                             setEditPromtId={setEditPromtId}
                             setPostId={setPostId}
+                            creationDate={post.creation_date}
                         />))}
                     </>
                     }
