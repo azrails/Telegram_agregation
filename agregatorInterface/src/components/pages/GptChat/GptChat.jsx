@@ -10,8 +10,11 @@ import { prepareSummary } from "../ProjectPage/ProjectPage";
 export default function GptChat() {
     const [gptResponse, setGptResponse] = useState('');
     const [inputValue, setInputValue] = useState('');
+    const [loading, setLoading] = useState(false);
     const getResponseFromGpt = async () => {
+        setLoading(true);
         const response = await $api.post('gpt_chat/', { value: inputValue })
+        setLoading(false);
         setGptResponse(response.data.value)
         setInputValue('');
     }
@@ -42,7 +45,7 @@ export default function GptChat() {
                         flex: 'auto',
                     }}
                 >
-                    <Button onClick={() => getResponseFromGpt()} sx={{
+                    <Button loading={loading} onClick={() => getResponseFromGpt()} sx={{
                         '&:focus': {
                             outline: 'none'
                         },
