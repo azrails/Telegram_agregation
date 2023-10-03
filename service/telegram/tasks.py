@@ -212,7 +212,7 @@ def notify_events_sender(gpt_response_list, project_title, current_time, prev_ti
         text_to_chapter = []
         part = 1
         while i < len(gpt_response_list):
-            if len(gpt_response_list[i]) + len_text < 2500 or len(text_to_chapter) == 0:
+            if len(gpt_response_list[i]) + len_text < 2000 or len(text_to_chapter) == 0:
                 len_text += len(gpt_response_list[i])
                 text_to_chapter.append(gpt_response_list[i])
                 i+=1
