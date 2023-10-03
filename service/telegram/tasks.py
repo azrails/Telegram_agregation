@@ -318,7 +318,7 @@ def regenerate_post(long_type, date, project_id, promt_id):
         with open('results.json', 'w') as f:
             json.dump(posts, f, ensure_ascii=False, indent=2)
         responces_text = get_responces_from_gpt(current_promt, posts)
-        notify_events_sender(responces_text, project.title, current_time, prev_hour_date)
+        notify_events_sender(responces_text, project.title, current_date, prev_date)
         instance = GptPosts.objects.create(summary=' '.join(responces_text), project_id=project, promt_id=current_promt, date=current_date, 
                                            long_type=datetime.time(1,0) if long_type == 1 else datetime.time(2, 0) if long_type == 2 else datetime.time(0,0))
     return instance
