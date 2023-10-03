@@ -206,27 +206,23 @@ def get_responces_from_gpt(current_promt, posts):
     return responces_text
 
 def notify_events_sender(gpt_response_list, project_title, current_time, prev_time):
-    if len(gpt_response_list) > 1:
-        i = 0
-        len_text = 0
-        text_to_chapter = []
-        part = 1
-        while i < len(gpt_response_list):
-            if len(gpt_response_list[i]) + len_text < 2000 or len(text_to_chapter) == 0:
-                len_text += len(gpt_response_list[i])
-                text_to_chapter.append(gpt_response_list[i])
-                i+=1
-            else:
-                message = Message(content=f'<b>{project_title}</b><br><i>({get_msk_time(current_time)} - {get_msk_time(prev_time)})</i><br>Часть {part}<br><br>' + ' '.join(text_to_chapter), title=f'{project_title} ({get_msk_time(current_time)} - {get_msk_time(prev_time)})', level=Message.LEVEL_VERBOSE)
-                message.send(NOTIFY_TOKEN)
-                part+=1
-                len_text = 0
-                text_to_chapter = []
-        if len(text_to_chapter) != 0:
-            message = Message(content=f'<b>{project_title}</b><br><i>({get_msk_time(current_time)} - {get_msk_time(prev_time)})</i><br>Часть {part}<br><br>' + ' '.join(text_to_chapter), title=f'{project_title} ({get_msk_time(current_time)} - {get_msk_time(prev_time)})', level=Message.LEVEL_VERBOSE)
-            message.send(NOTIFY_TOKEN)
-    else:
-        message = Message(content=f'<b>{project_title}</b><br><i>({get_msk_time(current_time)} - {get_msk_time(prev_time)})</i><br><br>' + ' '.join(gpt_response_list), title=f'{project_title} ({get_msk_time(current_time)} - {get_msk_time(prev_time)})', level=Message.LEVEL_VERBOSE)
+    results_text = ' '.join(gpt_response_list)
+    i = 2000
+    part = 1
+    end = 0
+    while i < len(results_text):
+        while results_text[i] != '\n':
+            i -= 1
+        message = Message(content=f'<b>{project_title}</b><br><i>({get_msk_time(current_time)} - {get_msk_time(prev_time)})</i><br>Часть {part}<br><br>' + results_text[end:i], title=f'{project_title} ({get_msk_time(current_time)} - {get_msk_time(prev_time)})', level=Message.LEVEL_VERBOSE)
+        message.send(NOTIFY_TOKEN)
+        end = i
+        i += 2000
+        part += 1
+    if end == 0:
+        message = Message(content=f'<b>{project_title}</b><br><i>({get_msk_time(current_time)} - {get_msk_time(prev_time)})</i><br><br>' + results_text, title=f'{project_title} ({get_msk_time(current_time)} - {get_msk_time(prev_time)})', level=Message.LEVEL_VERBOSE)
+        message.send(NOTIFY_TOKEN)
+    elif len(results_text[end:len(results_text)]) > 0:
+        message = Message(content=f'<b>{project_title}</b><br><i>({get_msk_time(current_time)} - {get_msk_time(prev_time)})</i><br>Часть {part}<br><br>' + results_text[end:len(results_text)], title=f'{project_title} ({get_msk_time(current_time)} - {get_msk_time(prev_time)})', level=Message.LEVEL_VERBOSE)
         message.send(NOTIFY_TOKEN)
 
 
