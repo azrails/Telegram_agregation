@@ -222,6 +222,9 @@ def notify_events_sender(gpt_response_list, project_title, current_time, prev_ti
                 part+=1
                 len_text = 0
                 text_to_chapter = []
+        if len(text_to_chapter) != 0:
+            message = Message(content=f'<b>{project_title}</b><br><i>({get_msk_time(current_time)} - {get_msk_time(prev_time)})</i><br>Часть {part}<br><br>' + ' '.join(text_to_chapter), title=f'{project_title} ({get_msk_time(current_time)} - {get_msk_time(prev_time)})', level=Message.LEVEL_VERBOSE)
+            message.send(NOTIFY_TOKEN)
     else:
         message = Message(content=f'<b>{project_title}</b><br><i>({get_msk_time(current_time)} - {get_msk_time(prev_time)})</i><br><br>' + ' '.join(gpt_response_list), title=f'{project_title} ({get_msk_time(current_time)} - {get_msk_time(prev_time)})', level=Message.LEVEL_VERBOSE)
         message.send(NOTIFY_TOKEN)
