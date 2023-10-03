@@ -212,15 +212,16 @@ def notify_events_sender(gpt_response_list, project_title, current_time, prev_ti
         text_to_chapter = []
         part = 1
         while i < len(gpt_response_list):
-            len_text += len(gpt_response_list[i])
-            text_to_chapter.append(gpt_response_list[i])
-            if len_text > 2000:
+            if len(gpt_response_list[i]) + len_text < 2500 or len(text_to_chapter) == 0:
+                len_text += len(gpt_response_list[i])
+                text_to_chapter.append(gpt_response_list[i])
+                i+=1
+            else:
                 message = Message(content=f'<b>{project_title}</b><br><i>({get_msk_time(current_time)} - {get_msk_time(prev_time)})</i><br>Часть {part}<br><br>' + ' '.join(text_to_chapter), title=f'{project_title} ({get_msk_time(current_time)} - {get_msk_time(prev_time)})', level=Message.LEVEL_VERBOSE)
                 message.send(NOTIFY_TOKEN)
-                text_to_chapter = []
-                len_text = 0
                 part+=1
-            i+=1
+                len_text = 0
+                text_to_chapter = []
     else:
         message = Message(content=f'<b>{project_title}</b><br><i>({get_msk_time(current_time)} - {get_msk_time(prev_time)})</i><br><br>' + ' '.join(gpt_response_list), title=f'{project_title} ({get_msk_time(current_time)} - {get_msk_time(prev_time)})', level=Message.LEVEL_VERBOSE)
         message.send(NOTIFY_TOKEN)
