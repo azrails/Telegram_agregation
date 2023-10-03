@@ -133,7 +133,7 @@ def get_gpt_response(promt_text: str, posts_text) -> str:
         temperature=0.2
     )
     message = response['choices'][0]['message']['content']
-    return message.replace("\n", "<br>")
+    return message
 
 def comments_tree(comm_id):
     comm_level = Comments.objects.filter(id__icontains=f'@{comm_id}@')
@@ -213,16 +213,16 @@ def notify_events_sender(gpt_response_list, project_title, current_time, prev_ti
     while i < len(results_text):
         while results_text[i] != '\n':
             i -= 1
-        message = Message(content=f'<b>{project_title}</b><br><i>({get_msk_time(current_time)} - {get_msk_time(prev_time)})</i><br>Часть {part}<br><br>' + results_text[end:i], title=f'{project_title} ({get_msk_time(current_time)} - {get_msk_time(prev_time)})', level=Message.LEVEL_VERBOSE)
+        message = Message(content=f'<b>{project_title}</b><br><i>({get_msk_time(current_time)} - {get_msk_time(prev_time)})</i><br>Часть {part}<br><br>' + results_text[end:i].replace("\n", "<br>"), title=f'{project_title} ({get_msk_time(current_time)} - {get_msk_time(prev_time)})', level=Message.LEVEL_VERBOSE)
         message.send(NOTIFY_TOKEN)
         end = i
         i += 2000
         part += 1
     if end == 0:
-        message = Message(content=f'<b>{project_title}</b><br><i>({get_msk_time(current_time)} - {get_msk_time(prev_time)})</i><br><br>' + results_text, title=f'{project_title} ({get_msk_time(current_time)} - {get_msk_time(prev_time)})', level=Message.LEVEL_VERBOSE)
+        message = Message(content=f'<b>{project_title}</b><br><i>({get_msk_time(current_time)} - {get_msk_time(prev_time)})</i><br><br>' + results_text.replace("\n", "<br>"), title=f'{project_title} ({get_msk_time(current_time)} - {get_msk_time(prev_time)})', level=Message.LEVEL_VERBOSE)
         message.send(NOTIFY_TOKEN)
     elif len(results_text[end:len(results_text)]) > 0:
-        message = Message(content=f'<b>{project_title}</b><br><i>({get_msk_time(current_time)} - {get_msk_time(prev_time)})</i><br>Часть {part}<br><br>' + results_text[end:len(results_text)], title=f'{project_title} ({get_msk_time(current_time)} - {get_msk_time(prev_time)})', level=Message.LEVEL_VERBOSE)
+        message = Message(content=f'<b>{project_title}</b><br><i>({get_msk_time(current_time)} - {get_msk_time(prev_time)})</i><br>Часть {part}<br><br>' + results_text[end:len(results_text)].replace("\n", "<br>"), title=f'{project_title} ({get_msk_time(current_time)} - {get_msk_time(prev_time)})', level=Message.LEVEL_VERBOSE)
         message.send(NOTIFY_TOKEN)
 
 
@@ -239,7 +239,7 @@ def get_gpt_posts_hour():
             if len(posts) != 0:
                 responces_text = get_responces_from_gpt(current_promt, posts)
                 notify_events_sender(responces_text, project.title, current_time, prev_hour_date)
-                GptPosts.objects.create(summary=' '.join(responces_text), project_id=project, promt_id=current_promt)
+                GptPosts.objects.create(summary=' '.join(responces_text).replace("\n", "<br>"), project_id=project, promt_id=current_promt)
     return posts
 
 @app.task
@@ -255,7 +255,7 @@ def get_gpt_posts_day():
             if len(posts) != 0:
                 responces_text = get_responces_from_gpt(current_promt, posts)
                 notify_events_sender(responces_text, project.title, current_time, prev_hour_date)
-                GptPosts.objects.create(summary=' '.join(responces_text), project_id=project, promt_id=current_promt, long_type=datetime.time(0,0))
+                GptPosts.objects.create(summary=' '.join(responces_text).replace("\n", "<br>"), project_id=project, promt_id=current_promt, long_type=datetime.time(0,0))
     return posts
 
 @app.task
@@ -271,7 +271,7 @@ def get_gpt_posts_week():
             if len(posts) != 0:
                 responces_text = get_responces_from_gpt(current_promt, posts)
                 notify_events_sender(responces_text, project.title, current_time, prev_hour_date)
-                GptPosts.objects.create(summary=' '.join(responces_text), project_id=project, promt_id=current_promt, long_type=datetime.time(2,0))
+                GptPosts.objects.create(summary=' '.join(responces_text).replace("\n", "<br>"), project_id=project, promt_id=current_promt, long_type=datetime.time(2,0))
     return posts
 
 
@@ -297,7 +297,7 @@ def create_project_update_data(project_id):
         #for notify
         notify_events_sender(responces_text, project.title, current_date, prev_hour_date)
         #create gpt_post
-        GptPosts.objects.create(summary=' '.join(responces_text), project_id=project, promt_id=current_promt, long_type=project.update_time)
+        GptPosts.objects.create(summary=' '.join(responces_text).replace("\n", "<br>"), project_id=project, promt_id=current_promt, long_type=project.update_time)
     return json.dumps(
         {'posts': posts, 'project_time': str(project.update_time), 'date_timestamp': str(date_timestamp)},
         sort_keys=True,
@@ -319,7 +319,7 @@ def regenerate_post(long_type, date, project_id, promt_id):
             json.dump(posts, f, ensure_ascii=False, indent=2)
         responces_text = get_responces_from_gpt(current_promt, posts)
         notify_events_sender(responces_text, project.title, current_date, prev_date)
-        instance = GptPosts.objects.create(summary=' '.join(responces_text), project_id=project, promt_id=current_promt, date=current_date, 
+        instance = GptPosts.objects.create(summary=' '.join(responces_text).replace("\n", "<br>"), project_id=project, promt_id=current_promt, date=current_date, 
                                            long_type=datetime.time(1,0) if long_type == 1 else datetime.time(2, 0) if long_type == 2 else datetime.time(0,0))
     return instance
 
