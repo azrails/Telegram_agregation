@@ -211,7 +211,7 @@ def notify_events_sender(gpt_response_list, project_title, current_time, prev_ti
     part = 1
     end = 0
     while i < len(results_text):
-        while results_text[i] != '\n':
+        while results_text[i] != '\n' and results_text[i - 1] != '\n':
             i -= 1
         message = Message(content=f'<b>{project_title}</b><br><i>({get_msk_time(current_time)} - {get_msk_time(prev_time)})</i><br>Часть {part}<br><br>' + results_text[end:i].replace("\n", "<br>"), title=f'{project_title} ({get_msk_time(current_time)} - {get_msk_time(prev_time)})', level=Message.LEVEL_VERBOSE)
         message.send(NOTIFY_TOKEN)
